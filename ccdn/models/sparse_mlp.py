@@ -13,7 +13,8 @@ def dense_candidate_gradient_scores(model, layer_index):
     return (delta.transpose(0,1) @ inp).abs()
 
 class SparseLinear(nn.Module):
-    def __init__(self, in_features, out_features, density=0.2, bias=True, generator=None):
+    def __init__(self, in_features, out_features, density=0.2, bias=True,
+                 generator=None, initialization="legacy", is_output=False):
         super().__init__()
         self.in_features, self.out_features = in_features, out_features
         self.weight = nn.Parameter(torch.empty(out_features, in_features))
@@ -27,7 +28,27 @@ class SparseLinear(nn.Module):
         self.register_buffer("mask", mask.reshape_as(self.weight))
         self.weight.register_hook(lambda grad: grad * self.mask)
         with torch.no_grad(): self.weight.mul_(self.mask)
+        if initialization == "active_fan_in_kaiming":
+            self.initialize_active_fan_in_(is_output=is_output)
+        elif initialization != "legacy":
+            raise ValueError(f"unknown sparse initialization: {initialization}")
     def forward(self, x): return torch.nn.functional.linear(x, self.weight * self.mask, self.bias)
+    @torch.no_grad()
+    def initialize_active_fan_in_(self, is_output=False):
+        """Kaiming-scale each sparse row using its realized active fan-in."""
+        self.weight.zero_()
+        for row in range(self.out_features):
+            active = self.mask[row].nonzero().flatten()
+            fan_in = int(active.numel())
+            if fan_in == 0:
+                continue
+            gain = 1.0 if is_output else 2.0 ** 0.5
+            bound = (3.0 ** 0.5) * gain / (fan_in ** 0.5)
+            self.weight[row, active] = torch.empty(
+                fan_in, device=self.weight.device, dtype=self.weight.dtype
+            ).uniform_(-bound, bound)
+        if self.bias is not None:
+            self.bias.zero_()
     def reset_weight(self, out_index: int, in_index: int):
         """Reinitialize one stored value at this layer's Linear fan-in scale."""
         bound=1.0/self.in_features**0.5
@@ -36,11 +57,16 @@ class SparseLinear(nn.Module):
     def active_count(self): return int(self.mask.sum().item())
 
 class SparseMLP(nn.Module):
-    def __init__(self, input_size=784, hidden_sizes=(256,256), output_size=10, density=0.2, seed=0):
+    def __init__(self, input_size=784, hidden_sizes=(256,256), output_size=10,
+                 density=0.2, seed=0, initialization="legacy"):
         super().__init__()
         dims=[input_size,*hidden_sizes,output_size]
         gen=torch.Generator().manual_seed(seed)
-        self.layers=nn.ModuleList(SparseLinear(a,b,density,generator=gen) for a,b in zip(dims[:-1],dims[1:]))
+        self.layers=nn.ModuleList(
+            SparseLinear(a,b,density,generator=gen,initialization=initialization,
+                         is_output=i == len(dims)-2)
+            for i,(a,b) in enumerate(zip(dims[:-1],dims[1:])))
+        self.initialization=initialization
         self.hidden_sizes=tuple(hidden_sizes); self.last_activations=[]
         self._layer_inputs=[None]*len(self.layers); self._layer_deltas=[None]*len(self.layers)
     def forward(self,x):

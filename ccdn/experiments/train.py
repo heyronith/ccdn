@@ -37,8 +37,9 @@ def _device(value): return torch.device("cuda" if value=="auto" and torch.cuda.i
 def build(config,device):
     mc=config["model"]; typ=mc["type"]; dims=mc.get("hidden_sizes",[256,256]); seed=config["experiment"]["seed"]
     if typ in SPARSE_MODELS:
-        model=SparseMLP(hidden_sizes=dims,density=mc.get("density",0.2),seed=seed)
-    else: model=DenseMLP(hidden_sizes=dims)
+        model=SparseMLP(hidden_sizes=dims,density=mc.get("density",0.2),seed=seed,
+                        initialization=mc.get("initialization","legacy"))
+    else: model=DenseMLP(hidden_sizes=dims,initialization=mc.get("initialization","default"))
     model.to(device)
     oc=config.get("optimizer",{}); optimizer=torch.optim.SGD(model.parameters(),lr=float(oc.get("lr",0.01)),momentum=float(oc.get("momentum",0.0)))
     opts=config.get("algorithm",{})

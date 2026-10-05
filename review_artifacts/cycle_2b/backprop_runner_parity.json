@@ -1,0 +1,21 @@
+{
+  "official_repository": "shibhansh/loss-of-plasticity",
+  "official_commit": "a6b79580d85f3025bdb601566d3627c5f489f13b",
+  "official_classes": [
+    "lop.algos.bp.Backprop",
+    "lop.nets.deep_ffnn.DeepFFNN"
+  ],
+  "updates_compared": 9,
+  "learning_rate": 0.003,
+  "batch_size": 1,
+  "same_initial_weights": true,
+  "same_inputs_labels_order": true,
+  "predictions_before_update_match": true,
+  "losses_match": true,
+  "weight_updates_match": true,
+  "bias_updates_match": true,
+  "max_loss_abs_error": 0.0,
+  "max_weight_abs_error": 0.0,
+  "max_bias_abs_error": 0.0,
+  "classification": "runner_semantics_parity; not a benchmark result"
+}

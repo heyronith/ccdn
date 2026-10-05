@@ -1,0 +1,3 @@
+initialization,seed,data_source,synthetic_fallback,initial_activation_std,early_adaptation_auc,mean_end_accuracy,learning_rate,density,hidden_sizes,run_dir
+legacy,11,mnist,False,0.282442182302475,0.1171484375,0.12875,0.1,0.2,"[512, 512]",results/cycle2b_sparse_init_legacy/static_sparse/seed_11/20261005T154923_f855d0ac
+active_fan_in_kaiming,11,mnist,False,0.26113370060920715,0.3185546875,0.5,0.1,0.2,"[512, 512]",results/cycle2b_sparse_init_active_fan_in_kaiming/static_sparse/seed_11/20261005T154924_26534c26

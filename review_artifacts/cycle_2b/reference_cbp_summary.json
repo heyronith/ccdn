@@ -1,0 +1,101 @@
+{
+  "protocol": "single-example online permuted MNIST; prediction before update",
+  "learner_type": "continual_backprop_reference",
+  "seed": 101,
+  "tasks_requested": 150,
+  "tasks_completed": 150,
+  "examples_per_task": 60000,
+  "total_optimizer_updates": 9000000,
+  "architecture": [
+    784,
+    100,
+    100,
+    100,
+    10
+  ],
+  "activation": "relu",
+  "initialization": "published_kaiming",
+  "learning_rate": 0.003,
+  "momentum": 0.0,
+  "weight_decay": 0.0,
+  "stream_seed": 101,
+  "stream_metadata": {
+    "stream": "online_permuted_mnist",
+    "task_permutation_seed": "seed + 1000003 * (task_index + 1)",
+    "task_order_seed": "seed + 2000033 * (task_index + 1)",
+    "task_generation": "torch.randperm on CPU",
+    "images_stored_once": true
+  },
+  "runtime_seconds": 2105.6976521250326,
+  "resumed_from_checkpoint": false,
+  "final_replacement_state": {
+    "cbp_reference_replacements": 26970,
+    "replacement_rate": 1e-05,
+    "decay_rate": 0.99,
+    "maturity_threshold": 100,
+    "accumulate": true,
+    "util_type": "adaptable_contribution",
+    "accumulated_replacements_by_layer": [
+      0.9100000000079853,
+      0.9100000000079853,
+      0.9100000000079853
+    ],
+    "eligible_units_by_layer": [
+      100,
+      100,
+      100
+    ],
+    "mean_age_by_layer": [
+      312862.625,
+      1222392.125,
+      2116655.75
+    ],
+    "mean_utility_by_layer": [
+      0.5752155780792236,
+      0.6759636402130127,
+      1.3309484720230103
+    ],
+    "mean_bias_corrected_utility_by_layer": [
+      0.5752155780792236,
+      0.6759636402130127,
+      1.3309484720230103
+    ]
+  },
+  "peak_20_task_accuracy": 0.9286508333333334,
+  "peak_window_start": 110,
+  "peak_window_end": 129,
+  "final_20_task_accuracy": 0.9279449999999999,
+  "plasticity_drop": 0.0007058333333335165,
+  "loss_of_plasticity_gate_passed": null,
+  "accuracy_task_0": 0.92155,
+  "accuracy_task_149": 0.9307333333333333,
+  "slope_tasks_0_49": -2.84193677470972e-05,
+  "slope_tasks_50_99": 2.6236094437781384e-05,
+  "slope_tasks_100_149": 2.7354941976782086e-06,
+  "peak_occurs_before_final_20_task_region": true,
+  "slope_from_peak_window_end_to_final": 0.0001571428571428663,
+  "sustained_downward_trend": false,
+  "initial_dead_unit_fraction": 0.0,
+  "final_dead_unit_fraction": 0.0,
+  "initial_mean_absolute_weight": 0.060072441366117,
+  "final_mean_absolute_weight": 0.06161387276721433,
+  "initial_effective_rank_by_layer": [
+    71.96975163098188,
+    63.06876413584299,
+    52.813609974173986
+  ],
+  "final_effective_rank_by_layer": [
+    56.81594539846692,
+    48.57897476079858,
+    48.05375378178375
+  ],
+  "data_source": "mnist",
+  "synthetic_fallback": false,
+  "peak_task": 129,
+  "task_sequence_sha256": "1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844",
+  "official_reference_source": "shibhansh/loss-of-plasticity",
+  "official_reference_commit": "a6b79580d85f3025bdb601566d3627c5f489f13b",
+  "replacement_rate": 1e-05,
+  "replacement_count": 26970,
+  "paired_task_sequence_verified": true
+}

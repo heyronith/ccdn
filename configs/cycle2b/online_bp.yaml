@@ -1,0 +1,29 @@
+experiment:
+  name: cycle_2b_online_bp
+  seed: 101
+  device: auto
+  deterministic: true
+  cpu_threads: 1
+
+stream:
+  dataset_root: ./data
+  tasks: 150
+  examples_per_task: 60000
+
+model:
+  type: static_dense
+  hidden_sizes: [100, 100, 100]
+  output_size: 10
+  initialization: published_kaiming
+
+optimizer:
+  type: sgd
+  learning_rate: 0.003
+  momentum: 0.0
+  weight_decay: 0.0
+
+diagnostics:
+  examples: 2000
+
+output:
+  root: results

@@ -1,40 +1,27 @@
 # Implementation report
 
-Cycle: 2V — Official Baseline Acquisition, Execution, and Harness Parity
+Cycle: 2B
 
-Base commit: `c663d62f9658e9f6dac1325a408a607ff83ab11a`
+Base commit: `700cce4b61878a9fbefbfa9fc5f2030a70457e9c`
 Final commit: this report's containing commit (SHA reported in handoff)
-Branch: `cycle-2v-official-baselines`
+Branch: `cycle-2b-plasticity-reproduction`
 
-Python: validation environments use Python 3.11.15; repository test environment uses Python 3.12.
-PyTorch: CBP environment 2.1.0; repository environment 2.14.1.
+Tests: `.venv/bin/python -m pytest -q` — 47 passed, 0 failed. Synthetic regression matrix: 10/10 model/seed runs passed.
 
-Official sources: Continual Backprop `a6b79580d85f3025bdb601566d3627c5f489f13b`; RigL `d39fc7d46505cb3196cb1edeb32ed0b6dd44c0f9`. Both fetched trees are pristine and gitignored.
+RigL dense candidate-gradient equivalence: PASS — reconstructed gradients match autograd at every dense effective-weight position in input-to-hidden, hidden-to-hidden, and hidden-to-output layers (`rtol=atol=1e-12`, float64).
 
-Tests:
-- Command: `.venv/bin/python -m pytest -q`
-- Passed: 35
-- Failed: 0
+Official Backprop runner parity: PASS — pinned `shibhansh/loss-of-plasticity` commit `a6b79580d85f3025bdb601566d3627c5f489f13b`; 9 one-example updates matched official `Backprop` predictions-before-update, loss, weights, and biases; maximum absolute errors were zero.
 
-Validation commands:
-- `python scripts/fetch_official_baselines.py` — pinned source fetch and SHA verification.
-- `.venv/bin/python -m ccdn.validation.official_baselines` — passed source verification, upstream/local parity probes, and evidence collection.
-- `.venv/bin/python -m ccdn.experiments.run_matrix --suite configs/suites/smoke.yaml` — existing Cycle 1 synthetic smoke suite completed all 10 model/seed runs.
-- Official CBP PyTorch MNIST loader and `online_expr.py` — real-MNIST execution completed; 6 optimizer updates across two 30,000-example segments.
-- Official RigL TensorFlow `train.py` — real-MNIST execution completed; 3 optimizer updates and mask changes in each sparse layer.
+Online PMNIST reproduction: 150/150 tasks, 9,000,000/9,000,000 updates on real MNIST. Seed 101, architecture 784–100–100–100–10, published Kaiming initialization, SGD 0.003. Runtime: 1,208 s Backprop; 2,106 s CBP.
 
-Data: real MNIST for both upstream execution smokes; no synthetic fallback. These are framework/execution checks, not CCDN experiments or performance comparisons.
+Backprop gate: peak 20-task accuracy 0.922660 (window tasks 0–19; peak task 19); final 20-task accuracy 0.871757; drop 0.050903. Peak preceded the final region; post-peak and final-50 OLS slopes were both negative. Gate: PASS.
 
-Artifacts: `review_artifacts/cycle_2v/` — provenance, runtime versions, execution summaries, CBP mechanism/parity checks, RigL parity, validation summary, and legacy-vs-reference notes. External source clones, environments, datasets, and raw logs remain gitignored.
+Reference CBP executed: YES — pinned Cycle 2V reference port from `shibhansh/loss-of-plasticity` commit `a6b79580d85f3025bdb601566d3627c5f489f13b`; same sequence hash, initialization, architecture, optimizer, seed, and 9,000,000 updates. Final-20 accuracy 0.927945; drop 0.000706; 26,970 replacements; final dead-unit fraction 0.0 versus Backprop 0.17; final mean effective rank 51.15 versus Backprop 25.22. Measurements only; one seed, no significance claim.
 
-Legacy-vs-reference differences: CBP utility, bias correction, maturity, replacement accumulation, and reset ordering differ from the lightweight Cycle 2 method. RigL schedule/interface and gradient path differ from Cycle 2's local implementation; details are in `review_artifacts/cycle_2v/legacy_vs_reference.md`.
+Sparse initialization sanity: real MNIST, seed 11, 5 permutations × 20 batches, density 0.20. Legacy vs active-fan-in Kaiming: initial activation std 0.282442 vs 0.261134; mean adaptation AUC 0.117148 vs 0.318555; mean end accuracy 0.128750 vs 0.500000. This exposes an initialization confound and is not evidence about CCDN.
 
-Validation artifacts: `review_artifacts/cycle_2v/`.
+Artifacts: `review_artifacts/cycle_2b/` (parity, task accuracies, diagnostics, summaries, paired CSV, plots, sparse initialization check). Raw data and checkpoints remain under gitignored `data/` and `results/`.
 
-Known limitations:
-- RigL execution is an environment-patched official execution: an external TensorFlow 2.15 legacy-SGD compatibility wrapper supplies the API expected by the pinned source, and a runtime alias restores a removed TF1 assertion symbol for parity checks. The pinned upstream checkout is unchanged. Its official smoke uses a deliberately small 32×32 MLP, three updates, and initial one-shot 80% sparsity to exercise rewiring.
-- CBP smoke uses a 100-unit, three-hidden-layer network, two 30,000-example segments, and six batches of 10,000. Its low accuracy is only execution evidence.
-- Reference parity is validated with focused traces, not claimed for every upstream mode/configuration. RigL's local candidate-gradient path uses the existing practical dense approximation.
-- No CCDN performance comparison was run. No performance or scientific claim is made.
+Warnings: single-seed descriptive pilot. Backprop gate passes narrowly (drop 0.0509 against 0.05 threshold). Reviewer should inspect the committed curves and diagnostics before authorizing CCDN testing. No CCDN mechanism or CCDN experiment was run.
 
-Ready for scientific comparison: YES
+Ready to test CCDN in failure regime: YES — measurements are available for reviewer inspection; CCDN itself was not tested.
