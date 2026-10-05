@@ -8,3 +8,4 @@ results/**
 !results/.gitkeep
 *.pt
 .DS_Store
+.external/

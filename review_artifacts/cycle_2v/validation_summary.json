@@ -1,0 +1,19 @@
+{
+  "continual_backprop": {
+    "official_repository_verified": true,
+    "official_commit_verified": true,
+    "official_code_executed": true,
+    "reference_port_created": true,
+    "parity_passed": true
+  },
+  "rigl": {
+    "official_repository_verified": true,
+    "official_commit_verified": true,
+    "official_code_executed": true,
+    "reference_port_created": true,
+    "parity_passed": true
+  },
+  "classification": "validated_reference",
+  "no_ccdn_performance_experiments_run": true,
+  "scientific_performance_claim": false
+}

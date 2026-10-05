@@ -1,0 +1,30 @@
+{
+  "source_commit": "d39fc7d46505cb3196cb1edeb32ed0b6dd44c0f9",
+  "drop_fraction": 0.25,
+  "official_mask": [
+    [
+      1,
+      0,
+      1,
+      1,
+      1,
+      0
+    ]
+  ],
+  "pytorch_mask": [
+    [
+      1,
+      0,
+      1,
+      1,
+      1,
+      0
+    ]
+  ],
+  "weights_match": true,
+  "exact_edge_conservation": true,
+  "lowest_magnitude_edge_pruned": true,
+  "growth_used_gradient_ranking": true,
+  "new_edges_zero_initialized": true,
+  "new_edge_optimizer_state_reset": true
+}

@@ -1,0 +1,28 @@
+{
+  "official_commit": "a6b79580d85f3025bdb601566d3627c5f489f13b",
+  "official_code_unchanged": true,
+  "loader": "pinned lop/permuted_mnist/load_mnist.py",
+  "data_source": "MNIST",
+  "synthetic": false,
+  "tasks": 2,
+  "change_after_examples": 30000,
+  "updates": 6,
+  "batch_size": 10000,
+  "hidden_layers": 3,
+  "hidden_width": 100,
+  "training_metrics_finite": true,
+  "output_generated": true,
+  "output_metrics": {
+    "accuracy_values": [
+      0.10980000346899033,
+      0.1096000000834465,
+      0.10750000178813934,
+      0.07240000367164612,
+      0.06440000236034393,
+      0.07519999891519547
+    ],
+    "approximate_ranks_finite": true,
+    "dead_neurons_finite": true
+  },
+  "limitation": "Upstream online_expr allocates rank rows in 60,000-example units; smoke uses two 30,000-example task segments and six 10,000-example updates."
+}

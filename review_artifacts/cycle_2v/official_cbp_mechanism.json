@@ -1,0 +1,19 @@
+{
+  "label": "mechanism validation \u2014 not benchmark performance",
+  "utility_updated": true,
+  "mean_activation_state_present": true,
+  "age_progression_observed": true,
+  "fractional_accumulation_observed": true,
+  "maturity_threshold_observed": true,
+  "unit_replaced": true,
+  "incoming_reinitialized_within_bound": true,
+  "outgoing_weight_zeroed": true,
+  "replacement_age_reset": true,
+  "utility_and_activation_reset": true,
+  "final_age": [
+    0.0,
+    2.0,
+    2.0
+  ],
+  "fractional_remainder": 0.20000000000000018
+}

@@ -1,27 +1,40 @@
 # Implementation report
 
-Cycle: 2
+Cycle: 2V — Official Baseline Acquisition, Execution, and Harness Parity
 
-Base commit: `1815788ebb591775e2d97b7072b7876415e0f135`
-Final commit: branch HEAD (SHA reported in handoff)
-Tests: `.venv/bin/python -m pytest -q` — 25 passed, 0 failed
+Base commit: `c663d62f9658e9f6dac1325a408a607ff83ab11a`
+Final commit: this report's containing commit (SHA reported in handoff)
+Branch: `cycle-2v-official-baselines`
 
-Real MNIST verified: YES — torchvision MNIST, 60,000 train / 10,000 test; scientific configs abort on load error and use `allow_synthetic_fallback: false`.
+Python: validation environments use Python 3.11.15; repository test environment uses Python 3.12.
+PyTorch: CBP environment 2.1.0; repository environment 2.14.1.
 
-Chosen LR: 0.10 shared SGD learning rate, selected on seed 11 from 0.01, 0.03, 0.10 using mean five-permutation end accuracy averaged across static dense and sparse.
+Official sources: Continual Backprop `a6b79580d85f3025bdb601566d3627c5f489f13b`; RigL `d39fc7d46505cb3196cb1edeb32ed0b6dd44c0f9`. Both fetched trees are pristine and gitignored.
 
-Preflight: all seven models succeeded on real MNIST (seed 11, 5 permutations × 20 batches). All metrics finite, sparse counts matched, RigL and CCDN-0A rewired. Static dense mean end accuracy was 0.519.
+Tests:
+- Command: `.venv/bin/python -m pytest -q`
+- Passed: 35
+- Failed: 0
 
-Pilot: all 21 runs completed on real MNIST (7 models × seeds 101, 202, 303; 100 permutations × 50 batches; batch 128). Models: static_dense, continual_backprop, static_sparse, selective_reset, rigl, continual_backprop_sparse, ccdn_0a.
+Validation commands:
+- `python scripts/fetch_official_baselines.py` — pinned source fetch and SHA verification.
+- `.venv/bin/python -m ccdn.validation.official_baselines` — passed source verification, upstream/local parity probes, and evidence collection.
+- `.venv/bin/python -m ccdn.experiments.run_matrix --suite configs/suites/smoke.yaml` — existing Cycle 1 synthetic smoke suite completed all 10 model/seed runs.
+- Official CBP PyTorch MNIST loader and `online_expr.py` — real-MNIST execution completed; 6 optimizer updates across two 30,000-example segments.
+- Official RigL TensorFlow `train.py` — real-MNIST execution completed; 3 optimizer updates and mask changes in each sparse layer.
 
-Results:
-- Raw runs: `results/cycle2_lr_calibration/`, `results/cycle2_preflight/`, `results/cycle2_pilot/`.
-- Committed review tables: `review_artifacts/cycle_2/` (calibration, 7 preflight summaries, 21 pilot summaries, 2,100 per-permutation rows, paired sparse differences, resource comparison, manifest).
-- Cycle 1 synthetic regression smoke: 10/10 runs succeeded after Cycle 2 changes.
+Data: real MNIST for both upstream execution smokes; no synthetic fallback. These are framework/execution checks, not CCDN experiments or performance comparisons.
 
-Warnings:
-- This is a pilot experiment, not definitive evidence. Dense methods are contextual references, not active-parameter-matched controls. Paired values are raw for three seeds; no significance claims are made. No CCDN success claim is made.
-- CUDA and MPS were unavailable; all runs used CPU.
-- Raw checkpoints and the MNIST dataset remain gitignored and are not committed.
+Artifacts: `review_artifacts/cycle_2v/` — provenance, runtime versions, execution summaries, CBP mechanism/parity checks, RigL parity, validation summary, and legacy-vs-reference notes. External source clones, environments, datasets, and raw logs remain gitignored.
 
-Ready for review: YES
+Legacy-vs-reference differences: CBP utility, bias correction, maturity, replacement accumulation, and reset ordering differ from the lightweight Cycle 2 method. RigL schedule/interface and gradient path differ from Cycle 2's local implementation; details are in `review_artifacts/cycle_2v/legacy_vs_reference.md`.
+
+Validation artifacts: `review_artifacts/cycle_2v/`.
+
+Known limitations:
+- RigL execution is an environment-patched official execution: an external TensorFlow 2.15 legacy-SGD compatibility wrapper supplies the API expected by the pinned source, and a runtime alias restores a removed TF1 assertion symbol for parity checks. The pinned upstream checkout is unchanged. Its official smoke uses a deliberately small 32×32 MLP, three updates, and initial one-shot 80% sparsity to exercise rewiring.
+- CBP smoke uses a 100-unit, three-hidden-layer network, two 30,000-example segments, and six batches of 10,000. Its low accuracy is only execution evidence.
+- Reference parity is validated with focused traces, not claimed for every upstream mode/configuration. RigL's local candidate-gradient path uses the existing practical dense approximation.
+- No CCDN performance comparison was run. No performance or scientific claim is made.
+
+Ready for scientific comparison: YES

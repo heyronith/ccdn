@@ -7,6 +7,7 @@ from ccdn.models.dense_mlp import DenseMLP
 from ccdn.models.sparse_mlp import SparseMLP
 from ccdn.baselines import StaticDense,StaticSparse,SelectiveReset,ContinualBackprop,RigL
 from ccdn.algorithms import CCDN0A
+from ccdn.official_reference import ContinualBackpropReference, RigLReference
 from ccdn.streams.permuted_mnist import PermutedMNISTStream,permute_batch
 from ccdn.metrics import diagnostics,account,normalized_adaptation_auc,summarize_adaptation_auc
 from ccdn.utils.config import load_config,save_config
@@ -14,14 +15,18 @@ from ccdn.utils.reproducibility import seed_everything
 from ccdn.utils.logging import write_metrics,write_summary
 from ccdn.utils.checkpointing import save_checkpoint
 
-ALGOS={"static_dense":StaticDense,"static_sparse":StaticSparse,"selective_reset":SelectiveReset,"continual_backprop":ContinualBackprop,"continual_backprop_sparse":ContinualBackprop,"rigl":RigL,"ccdn_0a":CCDN0A}
-SPARSE_MODELS={"static_sparse","selective_reset","rigl","continual_backprop_sparse","ccdn_0a"}
+ALGOS={"static_dense":StaticDense,"static_sparse":StaticSparse,"selective_reset":SelectiveReset,"continual_backprop":ContinualBackprop,"continual_backprop_lightweight":ContinualBackprop,"continual_backprop_sparse":ContinualBackprop,"rigl":RigL,"rigl_legacy":RigL,"ccdn_0a":CCDN0A,"continual_backprop_reference":ContinualBackpropReference,"rigl_reference":RigLReference}
+SPARSE_MODELS={"static_sparse","selective_reset","rigl","rigl_legacy","continual_backprop_sparse","ccdn_0a","rigl_reference"}
 DEFAULT_COMPARISON_GROUPS={
     "static_dense":"contextual_dense_reference",
     "continual_backprop":"contextual_dense_reference",
+    "continual_backprop_lightweight":"contextual_dense_reference",
+    "continual_backprop_reference":"contextual_dense_reference",
     "static_sparse":"primary_sparse_resource_matched",
     "selective_reset":"primary_sparse_resource_matched",
     "rigl":"primary_sparse_resource_matched",
+    "rigl_legacy":"primary_sparse_resource_matched",
+    "rigl_reference":"primary_sparse_resource_matched",
     "continual_backprop_sparse":"primary_sparse_resource_matched",
     "ccdn_0a":"primary_sparse_resource_matched",
 }

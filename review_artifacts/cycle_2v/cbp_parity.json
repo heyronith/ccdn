@@ -1,0 +1,13 @@
+{
+  "weight_and_bias_updates": true,
+  "utility_update": true,
+  "bias_correction": true,
+  "age_progression": true,
+  "fractional_accumulator": true,
+  "selected_unit_and_reset": true,
+  "outgoing_weight_zeroing": true,
+  "initialization_bounds": true,
+  "replacement_count": 7,
+  "trace_steps": 4,
+  "numerical_tensor_comparisons": true
+}

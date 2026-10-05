@@ -1,0 +1,32 @@
+{
+  "official_commit": "d39fc7d46505cb3196cb1edeb32ed0b6dd44c0f9",
+  "execution_path": "pinned rigl/rigl_tf2/train.py with RigL mask updater",
+  "runtime_patch": "TF 2.15 legacy SGD API only; upstream source pristine",
+  "dataset": "MNIST via official TFDS loader",
+  "synthetic": false,
+  "updates_configured": 3,
+  "updates_observed": 3,
+  "mask_updater": "RigL",
+  "one_shot_initial_sparsity": 0.8,
+  "initial_active_edges_by_layer": [
+    5018,
+    205,
+    64
+  ],
+  "final_active_edges_by_layer": [
+    5018,
+    205,
+    64
+  ],
+  "active_count_conserved_by_layer": true,
+  "mask_changed_by_layer": [
+    true,
+    true,
+    true
+  ],
+  "mask_changed": true,
+  "training_finite": true,
+  "test_loss_values": [],
+  "test_accuracy_values": [],
+  "zero_grow_initialization_and_new_slot_reset": "verified against SparseRigLOptimizerBase in rigl_parity.json"
+}

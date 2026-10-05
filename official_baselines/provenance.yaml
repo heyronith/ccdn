@@ -1,0 +1,14 @@
+continual_backprop:
+  repository: shibhansh/loss-of-plasticity
+  commit: a6b79580d85f3025bdb601566d3627c5f489f13b
+  license: MIT
+  framework: pytorch
+  status: official_reference
+rigl:
+  repository: google-research/rigl
+  commit: d39fc7d46505cb3196cb1edeb32ed0b6dd44c0f9
+  license: Apache-2.0
+  framework:
+    - tensorflow_v1
+    - tensorflow_v2
+  status: official_reference
