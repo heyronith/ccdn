@@ -17,6 +17,7 @@ class SparseLinear(nn.Module):
                  generator=None, initialization="legacy", is_output=False):
         super().__init__()
         self.in_features, self.out_features = in_features, out_features
+        self.is_output = bool(is_output)
         self.weight = nn.Parameter(torch.empty(out_features, in_features))
         self.bias = nn.Parameter(torch.empty(out_features)) if bias else None
         nn.init.kaiming_uniform_(self.weight, a=5 ** 0.5)

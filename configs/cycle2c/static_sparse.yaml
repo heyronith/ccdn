@@ -1,0 +1,31 @@
+experiment:
+  name: cycle2c_failure_regime
+  seed: 101
+  device: auto
+  deterministic: true
+  cpu_threads: 1
+stream:
+  dataset_root: ./data
+  download: false
+  tasks: 150
+  examples_per_task: 60000
+model:
+  type: static_sparse
+  hidden_sizes: [336, 336, 336]
+  output_size: 10
+  density: 0.2
+  initialization: active_fan_in_kaiming
+optimizer:
+  type: sgd
+  learning_rate: 0.003
+  momentum: 0.0
+  weight_decay: 0.0
+diagnostics:
+  examples: 2000
+checkpointing:
+  rolling: true
+runtime:
+  strict_structural_cadence: true
+  expected_task_sequence_sha256: 1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844
+output:
+  root: results/cycle2c

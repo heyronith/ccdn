@@ -1,0 +1,25 @@
+{
+  "result": "PASS",
+  "configured_interval": 8192,
+  "first_event_update": 8192,
+  "observed_event_steps": {
+    "static_sparse": [],
+    "selective_reset": [
+      8192
+    ],
+    "rigl_reference": [
+      8192
+    ],
+    "ccdn_0a": [
+      8192
+    ]
+  },
+  "static_sparse_mask_unchanged": true,
+  "selective_reset_mask_unchanged": true,
+  "selective_reset_count": 4926,
+  "rigl_reference_topology_changed": true,
+  "ccdn_0a_topology_changed": true,
+  "active_edge_counts_conserved_all_methods": true,
+  "checkpoint_roundtrip_all_methods": true,
+  "finite_state_all_methods": true
+}

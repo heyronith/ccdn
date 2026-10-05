@@ -26,6 +26,10 @@ class CCDN0A(Baseline):
         self.cumulative_edge_turnover=0
         self.last_pruned=[]
         self.last_grown=[]
+        self.structural_event_steps=[]
+        self.utility_elements_updated=0
+        self.candidate_gradient_elements_scored=0
+        self.edges_ranked=0
 
     def after_backward(self):
         with torch.no_grad():
@@ -33,6 +37,7 @@ class CCDN0A(Baseline):
                 mask=layer.mask
                 if layer.weight.grad is not None:
                     utility.mul_(self.utility_decay).add_((layer.weight*layer.weight.grad).abs()*mask,alpha=1-self.utility_decay)
+                    self.utility_elements_updated += int(mask.sum().item())
                 utility.mul_(mask)
 
     def after_optimizer_step(self,optimizer):
@@ -51,8 +56,10 @@ class CCDN0A(Baseline):
                 if not n:
                     continue
                 flat_utility=utility.flatten()
+                self.edges_ranked += int(active.numel())
                 prune=active[torch.argsort(flat_utility[active])[:n]]
                 candidate=dense_candidate_gradient_scores(self.model,index).flatten()
+                self.candidate_gradient_elements_scored += int(candidate.numel())
                 grow=inactive[torch.argsort(candidate[inactive],descending=True)[:n]]
                 prune_mask=torch.zeros_like(flat_mask); prune_mask[prune]=True
                 grow_mask=torch.zeros_like(flat_mask); grow_mask[grow]=True
@@ -68,6 +75,7 @@ class CCDN0A(Baseline):
                     raise RuntimeError(f"CCDN-0A changed active-edge budget in layer {index}")
         if event_pruned:
             self.rewire_event_count+=1
+            self.structural_event_steps.append(self.global_step)
             self.total_edges_pruned+=event_pruned
             self.total_edges_grown+=event_grown
             self.cumulative_edge_turnover+=event_pruned+event_grown
@@ -75,9 +83,16 @@ class CCDN0A(Baseline):
     def metrics(self):
         values={
             "rewire_event_count":self.rewire_event_count,
+            "topology_events":self.rewire_event_count,
             "total_edges_pruned":self.total_edges_pruned,
+            "edges_pruned":self.total_edges_pruned,
             "total_edges_grown":self.total_edges_grown,
+            "edges_grown":self.total_edges_grown,
             "cumulative_edge_turnover":self.cumulative_edge_turnover,
+            "structural_event_steps":list(self.structural_event_steps),
+            "utility_elements_updated":self.utility_elements_updated,
+            "candidate_gradient_elements_scored":self.candidate_gradient_elements_scored,
+            "edges_ranked":self.edges_ranked,
         }
         active_values=[]
         for index,(layer,utility) in enumerate(zip(self.model.layers,self.utility)):
@@ -89,8 +104,9 @@ class CCDN0A(Baseline):
             all_active=torch.cat(active_values)
             values["mean_active_utility"]=float(all_active.mean().item())
             values["std_active_utility"]=float(all_active.std(unbiased=False).item())
+            values["median_active_utility"]=float(all_active.median().item())
         else:
-            values["mean_active_utility"]=0.0; values["std_active_utility"]=0.0
+            values["mean_active_utility"]=0.0; values["std_active_utility"]=0.0; values["median_active_utility"]=0.0
         return values
 
     def state_dict(self):
@@ -103,6 +119,10 @@ class CCDN0A(Baseline):
             "cumulative_edge_turnover":self.cumulative_edge_turnover,
             "last_pruned":self.last_pruned,
             "last_grown":self.last_grown,
+            "structural_event_steps":self.structural_event_steps,
+            "utility_elements_updated":self.utility_elements_updated,
+            "candidate_gradient_elements_scored":self.candidate_gradient_elements_scored,
+            "edges_ranked":self.edges_ranked,
         }
 
     def load_state_dict(self,state):
@@ -114,3 +134,7 @@ class CCDN0A(Baseline):
         self.cumulative_edge_turnover=int(state["cumulative_edge_turnover"])
         self.last_pruned=[(int(i),list(v)) for i,v in state.get("last_pruned",[])]
         self.last_grown=[(int(i),list(v)) for i,v in state.get("last_grown",[])]
+        self.structural_event_steps=[int(x) for x in state.get("structural_event_steps",[])]
+        self.utility_elements_updated=int(state.get("utility_elements_updated",0))
+        self.candidate_gradient_elements_scored=int(state.get("candidate_gradient_elements_scored",0))
+        self.edges_ranked=int(state.get("edges_ranked",0))

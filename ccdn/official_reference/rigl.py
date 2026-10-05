@@ -40,6 +40,9 @@ class RigLReference(Baseline):
         self.last_pruned = []
         self.last_grown = []
         self.last_drop_fraction = 0.0
+        self.structural_event_steps = []
+        self.candidate_gradient_elements_scored = 0
+        self.edges_ranked = 0
 
     def drop_fraction(self, step, optimizer=None):
         if self.schedule == "constant":
@@ -67,6 +70,7 @@ class RigLReference(Baseline):
         if n_prune == 0:
             return [], []
         flat_weight = layer.weight.flatten()
+        self.edges_ranked += n_active
         drop_scores = (flat_weight * old_mask).abs()
         n_keep = n_active - n_prune
         kept = torch.topk(drop_scores, n_keep, sorted=False).indices
@@ -121,18 +125,26 @@ class RigLReference(Baseline):
         with torch.no_grad():
             for i, layer in enumerate(self.model.layers):
                 scores = dense_candidate_gradient_scores(self.model, i)
+                self.candidate_gradient_elements_scored += int(scores.numel())
                 pruned, grown = self.update_layer(i, scores, fraction, optimizer)
                 self.last_pruned.append((i, pruned))
                 self.last_grown.append((i, grown))
                 self.total_edges_pruned += len(pruned)
                 self.total_edges_grown += len(grown)
             self.rewire_event_count += 1
+            self.structural_event_steps.append(self.global_step)
 
     def metrics(self):
         return {"rigl_reference_rewire_events": self.rewire_event_count,
                 "rigl_reference_edges_pruned": self.total_edges_pruned,
                 "rigl_reference_edges_grown": self.total_edges_grown,
-                "rigl_reference_drop_fraction": self.last_drop_fraction}
+                "topology_events": self.rewire_event_count,
+                "edges_pruned": self.total_edges_pruned,
+                "edges_grown": self.total_edges_grown,
+                "rigl_reference_drop_fraction": self.last_drop_fraction,
+                "structural_event_steps": list(self.structural_event_steps),
+                "candidate_gradient_elements_scored": self.candidate_gradient_elements_scored,
+                "edges_ranked": self.edges_ranked}
 
     def state_dict(self):
         return {**super().state_dict(), "rewire_event_count": self.rewire_event_count,
@@ -140,7 +152,10 @@ class RigLReference(Baseline):
                 "total_edges_grown": self.total_edges_grown,
                 "last_pruned": self.last_pruned, "last_grown": self.last_grown,
                 "last_drop_fraction": self.last_drop_fraction,
-                "last_update_step": self.last_update_step}
+                "last_update_step": self.last_update_step,
+                "structural_event_steps": self.structural_event_steps,
+                "candidate_gradient_elements_scored": self.candidate_gradient_elements_scored,
+                "edges_ranked": self.edges_ranked}
 
     def load_state_dict(self, state):
         super().load_state_dict(state)
@@ -151,3 +166,6 @@ class RigLReference(Baseline):
         self.last_grown = [(int(i), list(v)) for i, v in state["last_grown"]]
         self.last_drop_fraction = float(state["last_drop_fraction"])
         self.last_update_step = int(state.get("last_update_step", -self.update_freq))
+        self.structural_event_steps = [int(x) for x in state.get("structural_event_steps", [])]
+        self.candidate_gradient_elements_scored = int(state.get("candidate_gradient_elements_scored", 0))
+        self.edges_ranked = int(state.get("edges_ranked", 0))

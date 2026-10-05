@@ -20,10 +20,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ccdn.baselines import StaticDense
-from ccdn.official_reference import ContinualBackpropReference
+from ccdn.baselines import StaticDense, StaticSparse, SelectiveReset
+from ccdn.official_reference import ContinualBackpropReference, RigLReference
+from ccdn.algorithms.ccdn_0a import CCDN0A
 from ccdn.models.dense_mlp import DenseMLP
+from ccdn.models.sparse_mlp import SparseMLP
 from ccdn.metrics.plasticity import online_plasticity_diagnostics
+from ccdn.metrics.resources import account
 from ccdn.streams.online_permuted_mnist import OnlinePermutedMNIST
 from ccdn.utils.config import load_config, save_config
 from ccdn.utils.reproducibility import (capture_rng_state, restore_rng_state,
@@ -41,12 +44,117 @@ def _learner_step(model, algorithm, optimizer, x, y):
     logits = model(x)
     prediction = int(logits.argmax(dim=1).item())
     loss = F.cross_entropy(logits, y)
+    if not bool(torch.isfinite(loss)):
+        raise FloatingPointError("non-finite loss")
     algorithm.before_backward(loss)
     loss.backward()
     algorithm.after_backward()
     optimizer.step()
     algorithm.after_optimizer_step(optimizer)
+    _validate_event_cadence(algorithm)
     return prediction, float(loss.detach())
+
+
+def _validate_event_cadence(algorithm):
+    if not getattr(algorithm, "strict_structural_cadence", False):
+        return
+    if algorithm.__class__.__name__ not in {"RigLReference", "CCDN0A", "SelectiveReset"}:
+        return
+    interval = int(getattr(algorithm, "update_freq", getattr(algorithm, "structural_interval", getattr(algorithm, "reset_interval", 0))))
+    if interval <= 0:
+        return
+    events = getattr(algorithm, "structural_event_steps", getattr(algorithm, "event_steps", []))
+    expected = list(range(interval, algorithm.global_step + 1, interval))
+    if algorithm.global_step % interval == 0 or events:
+        # A missing expected event is an invariant failure; extra/misaligned
+        # events are rejected by exact list comparison.
+        if list(events) != expected:
+            raise RuntimeError(f"structural event cadence mismatch at update {algorithm.global_step}: {events} != {expected}")
+
+
+def _build_online_learner(cfg, stream, device):
+    model_cfg, exp = cfg["model"], cfg["experiment"]
+    kind = model_cfg.get("type", "static_dense")
+    hidden_sizes = tuple(model_cfg.get("hidden_sizes", [100, 100, 100]))
+    output_size = int(model_cfg.get("output_size", 10))
+    if kind in {"static_sparse", "selective_reset", "rigl_reference", "ccdn_0a"}:
+        model = SparseMLP(input_size=stream.input_size, hidden_sizes=hidden_sizes,
+                          output_size=output_size, density=float(model_cfg.get("density", .2)),
+                          seed=int(exp.get("seed", 101)),
+                          initialization=model_cfg.get("initialization", "legacy")).to(device)
+    else:
+        model = DenseMLP(input_size=stream.input_size, hidden_sizes=hidden_sizes,
+                         output_size=output_size,
+                         initialization=model_cfg.get("initialization", "published_kaiming")).to(device)
+    opt_cfg = cfg["optimizer"]
+    optimizer = torch.optim.SGD(model.parameters(), lr=float(opt_cfg.get("learning_rate", .003)),
+                                momentum=float(opt_cfg.get("momentum", 0.0)),
+                                weight_decay=float(opt_cfg.get("weight_decay", 0.0)))
+    algorithm_cfg = dict(cfg.get("algorithm", {}))
+    if kind == "static_dense": algorithm = StaticDense(model)
+    elif kind == "continual_backprop_reference": algorithm = ContinualBackpropReference(model, **algorithm_cfg)
+    elif kind == "static_sparse": algorithm = StaticSparse(model)
+    elif kind == "selective_reset": algorithm = SelectiveReset(model, **algorithm_cfg)
+    elif kind == "rigl_reference": algorithm = RigLReference(model, **algorithm_cfg)
+    elif kind == "ccdn_0a": algorithm = CCDN0A(model, **algorithm_cfg)
+    else: raise ValueError(f"unsupported online learner: {kind}")
+    algorithm.strict_structural_cadence = bool(cfg.get("runtime", {}).get("strict_structural_cadence", False))
+    return model, algorithm, optimizer
+
+
+def _finite_tree(value):
+    if torch.is_tensor(value): return bool(torch.isfinite(value).all()) if value.is_floating_point() else True
+    if isinstance(value, dict): return all(_finite_tree(v) for v in value.values())
+    if isinstance(value, (list, tuple)): return all(_finite_tree(v) for v in value)
+    if isinstance(value, (float, np.floating)): return bool(np.isfinite(value))
+    return True
+
+
+def _validate_sparse_lifetime(model, algorithm, initial_counts, initial_masks):
+    if not isinstance(model, SparseMLP): return
+    counts = [int(layer.mask.sum().item()) for layer in model.layers]
+    if counts != initial_counts:
+        raise RuntimeError(f"active edge budget changed: {counts} != {initial_counts}")
+    if isinstance(algorithm, (StaticSparse, SelectiveReset)):
+        if any(not torch.equal(layer.mask, start) for layer, start in zip(model.layers, initial_masks)):
+            raise RuntimeError(f"{algorithm.name} mask changed")
+
+
+def _sparse_diagnostics(model, algorithm, initial_masks):
+    result = {}
+    if isinstance(model, SparseMLP):
+        current = [layer.mask.detach().cpu() for layer in model.layers]
+        for index, (layer, before, now) in enumerate(zip(model.layers, initial_masks, current)):
+            result[f"active_edges_layer_{index}"] = int(now.sum())
+            result[f"initial_mask_overlap_fraction_layer_{index}"] = float((before.cpu() == now).float().mean())
+        result["active_edges_total"] = int(sum(int(mask.sum()) for mask in current))
+        before_flat = torch.cat([m.cpu().flatten() for m in initial_masks])
+        now_flat = torch.cat([m.flatten() for m in current])
+        result["initial_mask_overlap_fraction_overall"] = float((before_flat == now_flat).float().mean())
+    metrics = algorithm.metrics()
+    for key, value in metrics.items():
+        result[f"algorithm_{key}"] = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list, tuple)) else value
+    return result
+
+
+def _assert_finite_state(model, algorithm):
+    if not all(bool(torch.isfinite(parameter).all()) for parameter in model.parameters()):
+        raise FloatingPointError("non-finite trainable parameter")
+    if not _finite_tree(algorithm.state_dict()):
+        raise FloatingPointError("non-finite algorithm state")
+
+
+def _atomic_rolling_checkpoint(path, payload):
+    path = Path(path)
+    previous = path.with_name("checkpoint_previous.pt")
+    temp = path.with_suffix(".pt.tmp")
+    with open(temp, "wb") as handle:
+        torch.save(payload, handle)
+        handle.flush()
+        import os
+        os.fsync(handle.fileno())
+    if path.exists(): path.replace(previous)
+    temp.replace(path)
 
 
 def _slope(values, start, end):
@@ -80,6 +188,9 @@ def summarize_online(task_rows, diagnostic_rows, requested_tasks,
         "slope_tasks_0_49": _slope(accuracy, 0, 49),
         "slope_tasks_50_99": _slope(accuracy, 50, 99),
         "slope_tasks_100_149": _slope(accuracy, 100, 149),
+        "mean_accuracy_tasks_0_49": float(np.mean(accuracy[0:50])) if completed >= 50 else None,
+        "mean_accuracy_tasks_50_99": float(np.mean(accuracy[50:100])) if completed >= 100 else None,
+        "mean_accuracy_tasks_100_149": float(np.mean(accuracy[100:150])) if completed >= 150 else None,
     }
     if completed >= 20:
         rolling = np.convolve(np.asarray(accuracy), np.ones(20) / 20,
@@ -185,10 +296,11 @@ def _read_rows(path, integer_fields=()):
                     converted[key] = None
                 elif key in integer_fields:
                     converted[key] = int(value)
-                elif key == "phase":
-                    converted[key] = value
                 else:
-                    converted[key] = float(value)
+                    try:
+                        converted[key] = float(value)
+                    except ValueError:
+                        converted[key] = value
             rows.append(converted)
     return rows
 
@@ -220,24 +332,27 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
     device = _device(exp.get("device", "auto"))
     if device.type == "cpu":
         torch.set_num_threads(int(exp.get("cpu_threads", 1)))
+    stream_cfg = cfg.get("stream", {})
     stream = stream or OnlinePermutedMNIST(
-        seed=seed, root=cfg.get("stream", {}).get("dataset_root", "./data"))
+        seed=seed, root=stream_cfg.get("dataset_root", "./data"),
+        download=bool(stream_cfg.get("download", True)))
+    tasks_requested = int(stream_cfg.get("tasks", 150))
+    examples_per_task = int(stream_cfg.get("examples_per_task", 60000))
+    if examples_per_task > len(stream.labels):
+        raise ValueError("examples_per_task exceeds available MNIST training examples")
+    task_sequence_hash = stream.sequence_digest(tasks_requested, examples_per_task)
+    expected_sequence_hash = cfg.get("runtime", {}).get("expected_task_sequence_sha256")
+    if expected_sequence_hash and task_sequence_hash != expected_sequence_hash:
+        raise RuntimeError("task sequence hash differs from frozen protocol")
     hidden_sizes = tuple(model_cfg.get("hidden_sizes", [100, 100, 100]))
     if len(hidden_sizes) != 3:
         raise ValueError("published-style reproduction requires exactly three hidden layers")
-    model = DenseMLP(input_size=stream.input_size, hidden_sizes=hidden_sizes,
-                     output_size=int(model_cfg.get("output_size", 10)),
-                     initialization=model_cfg.get("initialization", "published_kaiming")).to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=float(opt_cfg.get("learning_rate", 0.003)),
-                                momentum=float(opt_cfg.get("momentum", 0.0)),
-                                weight_decay=float(opt_cfg.get("weight_decay", 0.0)))
     algorithm_name = model_cfg.get("type", "static_dense")
-    if algorithm_name == "static_dense":
-        algorithm = StaticDense(model)
-    elif algorithm_name == "continual_backprop_reference":
-        algorithm = ContinualBackpropReference(model, **cfg.get("algorithm", {}))
-    else:
-        raise ValueError(f"unsupported online learner: {algorithm_name}")
+    model, algorithm, optimizer = _build_online_learner(cfg, stream, device)
+    initial_counts = ([int(layer.mask.sum().item()) for layer in model.layers]
+                      if isinstance(model, SparseMLP) else [])
+    initial_masks = ([layer.mask.detach().clone() for layer in model.layers]
+                     if isinstance(model, SparseMLP) else [])
 
     if resume_from:
         checkpoint = torch.load(resume_from, map_location=device, weights_only=False)
@@ -251,6 +366,16 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
         saved_config = checkpoint["config"]
         if saved_config != cfg:
             raise ValueError("resume configuration differs from checkpoint configuration")
+        if cfg.get("checkpointing", {}).get("rolling", False):
+            expected_checkpoint = {
+                "method": algorithm_name,
+                "protocol_hash": cfg.get("protocol_hash"),
+                "git_sha": cfg.get("git_sha"),
+                "task_sequence_sha256": task_sequence_hash,
+            }
+            mismatch = [key for key, value in expected_checkpoint.items() if checkpoint.get(key) != value]
+            if mismatch:
+                raise ValueError("rolling checkpoint identity mismatch: " + ", ".join(mismatch))
         output_dir = Path(output_dir or Path(resume_from).parent)
         resumed = True
     else:
@@ -273,11 +398,16 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
                                      "examples_seen_in_task", "lifetime_examples_seen",
                                      "optimizer_updates"})
     diagnostic_rows = _read_rows(diagnostic_csv, {"task_index", "lifetime_examples_seen"})
+    # A valid previous checkpoint may lag a CSV row written just before a crash.
+    task_rows = [row for row in task_rows if int(row["task_index"]) < first_task]
+    diagnostic_rows = [row for row in diagnostic_rows if int(row["task_index"]) < first_task]
+    _write_rows(task_rows, task_csv)
+    _write_rows(diagnostic_rows, diagnostic_csv)
 
-    tasks_requested = int(cfg.get("stream", {}).get("tasks", 150))
-    examples_per_task = int(cfg.get("stream", {}).get("examples_per_task", 60000))
-    if examples_per_task > len(stream.labels):
-        raise ValueError("examples_per_task exceeds available MNIST training examples")
+    if first_task != len(task_rows) or lifetime_examples != first_task * examples_per_task:
+        raise RuntimeError("task-boundary progress metadata is inconsistent")
+    if algorithm.global_step != lifetime_examples:
+        raise RuntimeError("optimizer update count does not equal lifetime examples seen")
     diagnostic_examples = int(cfg.get("diagnostics", {}).get("examples", 2000))
     task_limit = tasks_requested
     if max_tasks_this_invocation is not None:
@@ -287,9 +417,12 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
         task = stream.task(task_index)
         if task_index == 0 or task_index % 5 == 0:
             diag_x, _ = stream.diagnostic_batch(task, diagnostic_examples, device)
-            diagnostic_rows.append({"task_index": task_index, "phase": "task_start",
-                                    "lifetime_examples_seen": lifetime_examples,
-                                    **online_plasticity_diagnostics(model, diag_x)})
+            diagnostic = {"task_index": task_index, "phase": "task_start",
+                          "lifetime_examples_seen": lifetime_examples,
+                          **online_plasticity_diagnostics(model, diag_x),
+                          **_sparse_diagnostics(model, algorithm, initial_masks)}
+            if not _finite_tree(diagnostic): raise FloatingPointError("non-finite diagnostic metric")
+            diagnostic_rows.append(diagnostic)
             _write_rows(diagnostic_rows, diagnostic_csv)
 
         correct = 0
@@ -298,9 +431,15 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
             x, y = stream.sample(task, position, device)
             # Learner-facing API contains only x and y.
             prediction, loss = _learner_step(model, algorithm, optimizer, x, y)
+            if (algorithm.global_step + 1) % 4096 == 0:
+                _assert_finite_state(model, algorithm)
             correct += int(prediction == int(y.item()))
             loss_sum += loss
             lifetime_examples += 1
+        _assert_finite_state(model, algorithm)
+        if algorithm.global_step != lifetime_examples:
+            raise RuntimeError("completed task update count is inconsistent with lifetime examples")
+        _validate_event_cadence(algorithm)
         task_rows.append({
             "task_index": task_index,
             "online_accuracy": correct / examples_per_task,
@@ -309,12 +448,52 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
             "lifetime_examples_seen": lifetime_examples,
             "optimizer_updates": examples_per_task,
             "mean_preupdate_loss": loss_sum / examples_per_task,
+            "active_edges_by_layer": json.dumps([int(layer.mask.sum()) for layer in model.layers]) if isinstance(model,SparseMLP) else "[]",
+            "algorithm_metrics": json.dumps(algorithm.metrics(), sort_keys=True),
         })
+        if not 0.0 <= correct / examples_per_task <= 1.0 or not np.isfinite(loss_sum):
+            raise FloatingPointError("invalid task-level online metrics")
         _write_rows(task_rows, task_csv)
+        _validate_sparse_lifetime(model, algorithm, initial_counts, initial_masks)
+        if algorithm_name in {"rigl_reference", "ccdn_0a"}:
+            for event_step in getattr(algorithm, "structural_event_steps", getattr(algorithm, "event_steps", [])):
+                if event_step <= algorithm.global_step and (event_step <= 0 or event_step % int(cfg["algorithm"].get("structural_interval", cfg["algorithm"].get("update_freq", 8192))) != 0):
+                    raise RuntimeError(f"structural event occurred off cadence: {event_step}")
         cumulative_runtime = runtime_before + time.perf_counter() - started
-        checkpoint_path = output_dir / f"checkpoint_task_{task_index + 1:03d}.pt"
-        _save_task_checkpoint(checkpoint_path, model, algorithm, optimizer,
-                              task_index, lifetime_examples, cumulative_runtime, cfg)
+        if cfg.get("checkpointing", {}).get("rolling", False):
+            _atomic_rolling_checkpoint(output_dir / "checkpoint_latest.pt", {
+                "model": model.state_dict(), "optimizer": optimizer.state_dict(),
+                "algorithm": algorithm.state_dict(), "completed_task_index": task_index,
+                "lifetime_examples_seen": lifetime_examples, "rng_state": capture_rng_state(),
+                "config": copy.deepcopy(cfg), "runtime_seconds": cumulative_runtime,
+                "protocol_hash": cfg.get("protocol_hash"), "git_sha": cfg.get("git_sha"),
+                "method": algorithm_name,
+                "task_sequence_sha256": task_sequence_hash,
+            })
+            checkpoint_path = output_dir / "checkpoint_latest.pt"
+            # A read-back verifies the durable checkpoint at task boundaries.
+            torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        else:
+            checkpoint_path = output_dir / f"checkpoint_task_{task_index + 1:03d}.pt"
+            _save_task_checkpoint(checkpoint_path, model, algorithm, optimizer,
+                                  task_index, lifetime_examples, cumulative_runtime, cfg)
+        heartbeat = {
+            "completed_task_index": task_index,
+            "examples_seen_in_task": examples_per_task,
+            "lifetime_examples_seen": lifetime_examples,
+            "optimizer_updates": algorithm.global_step,
+            "task_sequence_sha256": task_sequence_hash,
+            "online_accuracy": correct / examples_per_task,
+            "finite_state": True,
+            "active_edges": initial_counts,
+            "checkpoint": str(checkpoint_path),
+            "algorithm": algorithm.metrics(),
+        }
+        (output_dir / "heartbeat.json").write_text(json.dumps(heartbeat, indent=2, allow_nan=False) + "\n")
+        status_path = cfg.get("runtime", {}).get("status_path")
+        if status_path:
+            Path(status_path).write_text(json.dumps({"state": "RUNNING", "method": algorithm_name,
+                                                     **heartbeat}, indent=2, allow_nan=False) + "\n")
         print(f"completed task {task_index + 1}/{tasks_requested}: "
               f"online_accuracy={correct / examples_per_task:.6f}, "
               f"updates={lifetime_examples}, checkpoint={checkpoint_path}",
@@ -330,9 +509,12 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
         if not has_final:
             final_task = stream.task(final_index)
             diag_x, _ = stream.diagnostic_batch(final_task, diagnostic_examples, device)
-            diagnostic_rows.append({"task_index": final_index, "phase": "final",
-                                    "lifetime_examples_seen": lifetime_examples,
-                                    **online_plasticity_diagnostics(model, diag_x)})
+            diagnostic = {"task_index": final_index, "phase": "final",
+                          "lifetime_examples_seen": lifetime_examples,
+                          **online_plasticity_diagnostics(model, diag_x),
+                          **_sparse_diagnostics(model, algorithm, initial_masks)}
+            if not _finite_tree(diagnostic): raise FloatingPointError("non-finite final diagnostic metric")
+            diagnostic_rows.append(diagnostic)
             _write_rows(diagnostic_rows, diagnostic_csv)
     runtime_total = runtime_before + time.perf_counter() - started
     summary = {
@@ -353,10 +535,21 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
         "data_source": stream.data_source,
         "synthetic_fallback": False,
         "stream_metadata": stream.metadata,
-        "task_sequence_sha256": stream.sequence_digest(tasks_requested, examples_per_task),
+        "task_sequence_sha256": task_sequence_hash,
         "runtime_seconds": runtime_total,
         "resumed_from_checkpoint": resumed,
         "final_replacement_state": algorithm.metrics(),
+        "initial_layer_active_edges": initial_counts,
+        "final_layer_active_edges": ([int(layer.mask.sum().item()) for layer in model.layers]
+                                      if isinstance(model, SparseMLP) else []),
+        "resource_accounting": account(model, algorithm, optimizer),
+        "algorithmic_work_counters": {
+            key: value for key, value in algorithm.metrics().items()
+            if key in {"utility_elements_updated", "candidate_gradient_elements_scored",
+                       "topology_events", "edges_ranked", "edges_pruned", "edges_grown",
+                       "weights_reset", "reset_count", "rewire_event_count",
+                       "total_edges_pruned", "total_edges_grown"}
+        },
     }
     if isinstance(algorithm, ContinualBackpropReference):
         summary["replacement_count"] = int(algorithm.replacement_count)
@@ -391,11 +584,26 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume-from")
+    parser.add_argument("--output-dir")
     parser.add_argument("--max-tasks-this-invocation", type=int)
     args = parser.parse_args()
     config = load_config(args.config)
-    run_online_experiment(config, resume_from=args.resume_from,
-                          max_tasks_this_invocation=args.max_tasks_this_invocation)
+    try:
+        run_online_experiment(config, resume_from=args.resume_from,
+                              output_dir=args.output_dir,
+                              max_tasks_this_invocation=args.max_tasks_this_invocation)
+    except FloatingPointError as exc:
+        status_path = config.get("runtime", {}).get("status_path")
+        if status_path:
+            Path(status_path).write_text(json.dumps({"state": "ABORTED_NONFINITE", "reason": str(exc),
+                                                     "method": config.get("model", {}).get("type")}, indent=2) + "\n")
+        raise
+    except Exception as exc:
+        status_path = config.get("runtime", {}).get("status_path")
+        if status_path:
+            Path(status_path).write_text(json.dumps({"state": "ABORTED_INVARIANT", "reason": str(exc),
+                                                     "method": config.get("model", {}).get("type")}, indent=2) + "\n")
+        raise
 
 
 if __name__ == "__main__":

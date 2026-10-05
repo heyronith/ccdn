@@ -1,0 +1,72 @@
+{
+  "architecture": {
+    "activation": "relu",
+    "dimensions": [
+      784,
+      336,
+      336,
+      336,
+      10
+    ],
+    "expected_active_weights_per_layer": [
+      52685,
+      22579,
+      22579,
+      672
+    ],
+    "expected_biases": 1018,
+    "expected_logical_active_parameters": 99533,
+    "sparse_density": 0.2,
+    "sparse_initialization": "active_fan_in_kaiming"
+  },
+  "cycle": "2C",
+  "diagnostics": {
+    "examples": 2000,
+    "metrics": [
+      "dead_unit_fraction_by_layer",
+      "effective_rank_by_layer",
+      "mean_absolute_weight_by_layer"
+    ],
+    "tasks": "0, every 5, final"
+  },
+  "interventions": {
+    "rigl_reference": true,
+    "selective_reset_scope": "per_layer",
+    "structural_interval_completed_updates": 8192,
+    "turnover_fraction": 0.05,
+    "utility_decay_formula": "0.99 ** (1 / 128)",
+    "utility_decay_numeric": 0.9999214848336215
+  },
+  "methods_in_order": [
+    "static_sparse",
+    "selective_reset",
+    "rigl_reference",
+    "ccdn_0a"
+  ],
+  "optimizer": {
+    "learning_rate": 0.003,
+    "momentum": 0,
+    "type": "SGD",
+    "weight_decay": 0
+  },
+  "phase_a": "Implement, test, real-MNIST preflight and protocol freeze only. Never launch 150-task training here.",
+  "science_label": "CCDN-0A failure-regime pilot; no outcome claims",
+  "static_sparse_gate": {
+    "minimum_plasticity_drop": 0.05,
+    "peak_before_final_window": true,
+    "require_post_peak_ols_slope_negative": true,
+    "require_tasks_100_149_ols_slope_negative": true,
+    "rolling_window_tasks": 20
+  },
+  "status": "frozen_phase_a_protocol",
+  "stream": {
+    "batch_size": 1,
+    "data": "real_mnist_only",
+    "examples_per_task": 60000,
+    "required_task_sequence_sha256": "1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844",
+    "seed": 101,
+    "synthetic_fallback": false,
+    "tasks": 150,
+    "type": "online_permuted_mnist"
+  }
+}

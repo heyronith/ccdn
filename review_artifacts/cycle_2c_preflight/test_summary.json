@@ -1,0 +1,12 @@
+{
+  "command": ".venv/bin/python -m pytest -q",
+  "passed": 60,
+  "failed": 0,
+  "synthetic_regression_command": ".venv/bin/python -m ccdn.experiments.run_matrix --suite configs/suites/smoke.yaml",
+  "synthetic_regression_completed": 10,
+  "synthetic_regression_expected": 10,
+  "real_mnist_preflight_command": ".venv/bin/python -m scripts.preflight_cycle2c",
+  "real_mnist_preflight_methods": 4,
+  "real_mnist_examples_per_method": 8192,
+  "real_mnist_preflight_status": "PASS"
+}

@@ -1,0 +1,16 @@
+{
+  "result": "PASS",
+  "automated_test_file": "tests/test_cycle2c_orchestrator.py",
+  "gate_failure_does_not_launch_dynamic_methods": true,
+  "gate_pass_launch_order": [
+    "static_sparse",
+    "selective_reset",
+    "rigl_reference",
+    "ccdn_0a"
+  ],
+  "invariant_error_stops_later_methods": true,
+  "resume_skips_completed_and_runs_remaining": true,
+  "resume_identity_mismatch_refused": true,
+  "protocol_hash_mismatch_refused": true,
+  "dirty_git_status_detected": true
+}

@@ -25,3 +25,25 @@ Artifacts: `review_artifacts/cycle_2b/` (parity, task accuracies, diagnostics, s
 Warnings: single-seed descriptive pilot. Backprop gate passes narrowly (drop 0.0509 against 0.05 threshold). Reviewer should inspect the committed curves and diagnostics before authorizing CCDN testing. No CCDN mechanism or CCDN experiment was run.
 
 Ready to test CCDN in failure regime: YES — measurements are available for reviewer inspection; CCDN itself was not tested.
+
+## Cycle 2C — Phase A protocol preparation
+
+Cycle: 2C Phase A
+
+Base commit: `0386a9076d755d5fb37f84dc926bad68269f03ef`
+Final commit: reported after commit
+Branch: `cycle-2c-ccdn-failure-regime`
+
+Tests: `.venv/bin/python -m pytest -q` — 60 passed, 0 failed. Existing synthetic smoke matrix: 10/10 runs completed.
+
+Frozen methods: `static_sparse`, `selective_reset`, `rigl_reference`, `ccdn_0a`. All use 784–336–336–336–10, density 0.20, active-fan-in Kaiming, SGD 0.003, and paired seed-101 initialization. CCDN-0A remains rewiring-only. Selective Reset adds the per-layer selection mode while retaining the historical global default. Structural cadence is 8,192 completed updates; RigL Reference uses `begin_step=8191` to align its pre-increment schedule.
+
+Real MNIST verified: YES, 60,000 training examples, 784 inputs, labels 0–9, no synthetic fallback. Exact task-stream SHA256: `1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844`.
+
+Preflight: PASS — four methods × 8,192 real examples. Initial weights/biases/masks matched. The state remained identical through update 8,191. At update 8,192, Selective Reset reset weights without mask changes; RigL Reference and CCDN-0A changed topology while conserving every layer's edge count. Check `review_artifacts/cycle_2c_preflight/`.
+
+Long scientific run: **NOT EXECUTED.** No 150-task / 9,000,000-update experiment or dynamic scientific comparison was launched. No CCDN outcome is claimed.
+
+Warnings: Phase A preflight is a software integration check and is not scientific evidence. The full static-sparse gate and subsequent comparisons require independent review and the normal terminal command.
+
+Ready for review: YES — protocol-ready Phase A only; not approval to execute the long run.
