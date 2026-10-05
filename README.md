@@ -39,3 +39,11 @@ Every run gets a timestamped unique directory below `results/<suite>/<model>/see
 One seed utility covers Python, NumPy, PyTorch CPU, and CUDA. Permutations derive from `seed + permutation_index`; learners receive only `(x, y)`, while the runner keeps permutation metadata for evaluation. Checkpoints include model, algorithm, optimizer, step, config, and RNG state. Device defaults to CUDA when available and otherwise CPU.
 
 Sparse layers use dense tensors and masks: logical active capacity is reported separately from allocated tensor parameters and dense execution cost. Continual Backprop is a lightweight documented reproduction using activation-times-sensitivity utility, maturity, and cadence-based unit replacement; it is not an exact paper reproduction. RigL uses a practical dense gradient estimate for inactive candidates. Adaptation AUC is measured from evaluation points within each permutation. Compute and evaluation are intentionally small for the smoke suite; extended sweeps and larger diagnostic studies belong to later cycles.
+
+## Cycle 2: CCDN-0A pilot
+
+Cycle 1 is accepted. Cycle 2 adds **CCDN-0A**, a rewiring-only method that combines ordinary gradient learning, EMA connection utility, utility-based pruning, and gradient-guided regrowth under a fixed per-layer sparse edge budget. This is the first proposed CCDN mechanism. Cycle 2 also adds a resource-matched sparse adaptation of the lightweight Continual Backprop control. It does not include consolidation or a Plasticity Reserve Score (PRS).
+
+The real-MNIST calibration, preflight, and exploratory three-seed pilot are configured in `configs/cycle2/` and `configs/suites/cycle2_*.yaml`. Scientific runs set `synthetic: false` and `allow_synthetic_fallback: false`; a data-loading failure aborts those runs. The development calibration selects one shared LR across static dense and static sparse. Pilot comparisons label the five active-parameter-matched sparse methods separately from contextual dense references.
+
+Cycle 2 is an exploratory pilot, not definitive evidence. It does not establish that CCDN-0A works, and no consolidation, PRS, or future-trainability mechanism is implemented.

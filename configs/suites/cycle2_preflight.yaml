@@ -1,0 +1,66 @@
+name: cycle2_preflight
+seeds:
+- 11
+models:
+- static_dense
+- continual_backprop
+- static_sparse
+- selective_reset
+- rigl
+- continual_backprop_sparse
+- ccdn_0a
+comparison_groups:
+  static_dense: contextual_dense_reference
+  continual_backprop: contextual_dense_reference
+  static_sparse: primary_sparse_resource_matched
+  selective_reset: primary_sparse_resource_matched
+  rigl: primary_sparse_resource_matched
+  continual_backprop_sparse: primary_sparse_resource_matched
+  ccdn_0a: primary_sparse_resource_matched
+base:
+  experiment:
+    device: auto
+    deterministic: true
+  stream:
+    dataset_root: ./data
+    permutations: 5
+    batches_per_permutation: 20
+    batch_size: 128
+    synthetic: false
+    allow_synthetic_fallback: false
+  model:
+    hidden_sizes:
+    - 512
+    - 512
+    density: 0.2
+  optimizer:
+    type: sgd
+    lr: 0.1
+    momentum: 0.0
+  evaluation:
+    eval_every_steps: 10
+    eval_batches: 10
+  output:
+    root: results
+algorithm_overrides:
+  selective_reset:
+    reset_interval: 64
+    reset_fraction: 0.05
+    utility_decay: 0.99
+  rigl:
+    rewire_interval: 64
+    rewire_fraction: 0.05
+  continual_backprop:
+    replacement_interval: 64
+    replacement_fraction: 0.01
+    maturity: 64
+    utility_decay: 0.99
+  continual_backprop_sparse:
+    replacement_interval: 64
+    replacement_fraction: 0.01
+    maturity: 64
+    utility_decay: 0.99
+  ccdn_0a:
+    structural_interval: 64
+    turnover_fraction: 0.05
+    utility_decay: 0.99

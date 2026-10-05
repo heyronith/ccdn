@@ -9,6 +9,8 @@ def main():
         for seed in suite["seeds"]:
             cfg=copy.deepcopy(base); cfg.setdefault("experiment",{})["seed"]=seed
             cfg.setdefault("model",{})["type"]=model
+            if model in suite.get("comparison_groups",{}):
+                cfg["experiment"]["comparison_group"]=suite["comparison_groups"][model]
             # Keep suite output unique by model/seed while retaining shared schema.
             cfg.setdefault("experiment",{}).setdefault("name",suite.get("name","smoke"))
             if model in suite.get("model_overrides",{}): cfg["model"].update(suite["model_overrides"][model])

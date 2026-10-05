@@ -1,0 +1,28 @@
+{
+  "chosen_shared_learning_rate": 0.1,
+  "selection_rule": "highest mean end-of-permutation accuracy averaged across static_dense and static_sparse over five permutations; ties within 1e-12 choose smaller LR",
+  "per_learning_rate_means": [
+    {
+      "learning_rate": 0.01,
+      "selection_mean_static_dense_sparse": 0.096328125
+    },
+    {
+      "learning_rate": 0.03,
+      "selection_mean_static_dense_sparse": 0.146171875
+    },
+    {
+      "learning_rate": 0.1,
+      "selection_mean_static_dense_sparse": 0.323671875
+    }
+  ],
+  "data_source": "mnist",
+  "seed": 11,
+  "comparison_groups": {
+    "contextual_dense_reference": [
+      "static_dense"
+    ],
+    "primary_sparse_resource_matched": [
+      "static_sparse"
+    ]
+  }
+}

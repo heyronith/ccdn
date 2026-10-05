@@ -1,48 +1,27 @@
 # Implementation report
 
-Cycle: 1 — final review fixes
+Cycle: 2
 
-Git commit: branch HEAD (SHA reported in handoff)
-Python version: 3.12.13
-PyTorch version: 2.14.1
+Base commit: `1815788ebb591775e2d97b7072b7876415e0f135`
+Final commit: branch HEAD (SHA reported in handoff)
+Tests: `.venv/bin/python -m pytest -q` — 25 passed, 0 failed
 
-Files/modules added or updated:
-- `ccdn/models/initialization.py`: shared PyTorch Linear-equivalent uniform initializer using full-layer fan-in.
-- `ccdn/models/dense_mlp.py`, `ccdn/models/sparse_mlp.py`: scale-correct unit/weight reset methods.
-- `ccdn/baselines/`: Selective Reset and Continual Backprop now use layer-consistent initialization; reset/replacement/rewire positions are retained in algorithm state.
-- `tests/`: explicit initialization-bound and SGD momentum-clearing checks; boundary-free hook coverage for all five baselines.
-- `review_artifacts/cycle_1/`: fresh smoke configs, summaries, adaptation curves, and per-evaluation metrics.
+Real MNIST verified: YES — torchvision MNIST, 60,000 train / 10,000 test; scientific configs abort on load error and use `allow_synthetic_fallback: false`.
 
-Tests:
-- command: `python -m pytest -q`
-- passed: 15
-- failed: 0
+Chosen LR: 0.10 shared SGD learning rate, selected on seed 11 from 0.01, 0.03, 0.10 using mean five-permutation end accuracy averaged across static dense and sparse.
 
-Commands executed:
-- `python -m pytest -q`
-- `python -m ccdn.experiments.run_matrix --suite configs/suites/smoke.yaml`
+Preflight: all seven models succeeded on real MNIST (seed 11, 5 permutations × 20 batches). All metrics finite, sparse counts matched, RigL and CCDN-0A rewired. Static dense mean end accuracy was 0.519.
 
-Smoke experiments:
-- models: static_dense, static_sparse, selective_reset, continual_backprop, rigl
-- seeds: 1, 2; permutations: 20 per run
-- all 10 runs succeeded on fresh seeded synthetic MNIST-shaped data
-- each full per-run `metrics.csv` is included; aggregate files are also provided
+Pilot: all 21 runs completed on real MNIST (7 models × seeds 101, 202, 303; 100 permutations × 50 batches; batch 128). Models: static_dense, continual_backprop, static_sparse, selective_reset, rigl, continual_backprop_sparse, ccdn_0a.
 
-Result locations:
-- raw runs: `results/smoke/<model>/seed_<seed>/<timestamp>_<id>/`
-- committed review bundle: `review_artifacts/cycle_1/`
-
-Key sanity observations:
-- Dense unit replacement and Selective Reset use uniform bounds derived from each full layer's `in_features`.
-- SGD momentum entries are verified cleared for reset weights, Continual Backprop incoming rows/outgoing columns, and RigL pruned/grown weights.
-- All five baselines' training hooks reject task/permutation/boundary arguments; learner batches remain `(x, y)`.
-- Smoke summaries and evaluation metrics are finite; RigL's logical active parameter count is conserved.
-
-Known limitations / deviations:
-- Continual Backprop remains a lightweight reproduction, and sparse execution still uses dense masked tensors.
+Results:
+- Raw runs: `results/cycle2_lr_calibration/`, `results/cycle2_preflight/`, `results/cycle2_pilot/`.
+- Committed review tables: `review_artifacts/cycle_2/` (calibration, 7 preflight summaries, 21 pilot summaries, 2,100 per-permutation rows, paired sparse differences, resource comparison, manifest).
+- Cycle 1 synthetic regression smoke: 10/10 runs succeeded after Cycle 2 changes.
 
 Warnings:
-- Synthetic integration smoke test only. These are not scientific MNIST results. Real-data training was not run.
-- No checkpoints or datasets are included in the committed review artifacts.
+- This is a pilot experiment, not definitive evidence. Dense methods are contextual references, not active-parameter-matched controls. Paired values are raw for three seeds; no significance claims are made. No CCDN success claim is made.
+- CUDA and MPS were unavailable; all runs used CPU.
+- Raw checkpoints and the MNIST dataset remain gitignored and are not committed.
 
 Ready for review: YES

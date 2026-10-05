@@ -11,3 +11,15 @@ def test_auc_and_early_late():
 def test_diagnostics_finite():
     m=DenseMLP(input_size=4,hidden_sizes=(3,),output_size=2); m(torch.ones(2,4)); d=diagnostics(m)
     assert all(math.isfinite(v) for v in d.values())
+
+def test_lifetime_auc_summary_uses_permutation_indices(tmp_path):
+    import pandas as pd
+    from ccdn.metrics.continual import summarize_adaptation_auc
+    rows=[{'permutation_index':i,'adaptation_auc':i/100,'end_accuracy':i/100} for i in range(100)]
+    path=tmp_path/'adaptation_auc.csv'; pd.DataFrame(rows).to_csv(path,index=False)
+    summary=summarize_adaptation_auc(path)
+    assert abs(summary['mean_adaptation_auc']-.495)<1e-9
+    assert abs(summary['first_25pct_mean_auc']-.12)<1e-9
+    assert abs(summary['last_25pct_mean_auc']-.87)<1e-9
+    assert abs(summary['late_minus_early_auc']-.75)<1e-9
+    assert abs(summary['auc_lifetime_slope']-.01)<1e-9

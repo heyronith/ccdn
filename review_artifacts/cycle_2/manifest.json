@@ -1,0 +1,105 @@
+{
+  "cycle": 2,
+  "pilot_label": "Pilot experiment \u2014 not definitive evidence.",
+  "data_source": "MNIST",
+  "synthetic_fallback": false,
+  "pilot_runs": 21,
+  "preflight_runs": 7,
+  "models": [
+    "ccdn_0a",
+    "continual_backprop",
+    "continual_backprop_sparse",
+    "rigl",
+    "selective_reset",
+    "static_dense",
+    "static_sparse"
+  ],
+  "pilot_seeds": [
+    101,
+    202,
+    303
+  ],
+  "permutations": 100,
+  "batches_per_permutation": 50,
+  "batch_size": 128,
+  "learning_rate": 0.1,
+  "comparison_groups": {
+    "primary_sparse_resource_matched": [
+      "static_sparse",
+      "selective_reset",
+      "rigl",
+      "continual_backprop_sparse",
+      "ccdn_0a"
+    ],
+    "contextual_dense_reference": [
+      "static_dense",
+      "continual_backprop"
+    ]
+  },
+  "paired_differences": "Raw per-seed CCDN-0A minus comparator differences for mean, early, late, late-minus-early, and slope AUC plus mean end accuracy; no p-values or significance claims.",
+  "base_commit": "1815788ebb591775e2d97b7072b7876415e0f135",
+  "python_version": "3.12.13",
+  "pytorch_version": "2.14.1",
+  "torchvision_version": "0.29.1",
+  "mnist_verified": {
+    "train_examples": 60000,
+    "test_examples": 10000,
+    "synthetic_fallback": false
+  },
+  "calibration": {
+    "seed": 11,
+    "permutations": 5,
+    "batches_per_permutation": 20,
+    "batch_size": 128,
+    "candidate_learning_rates": [
+      0.01,
+      0.03,
+      0.1
+    ],
+    "chosen_shared_learning_rate": 0.1,
+    "selection": "highest mean end-of-permutation accuracy averaged over static_dense and static_sparse; ties choose lower LR"
+  },
+  "preflight_protocol": {
+    "seed": 11,
+    "permutations": 5,
+    "batches_per_permutation": 20,
+    "batch_size": 128,
+    "hidden_sizes": [
+      512,
+      512
+    ],
+    "sparse_density": 0.2,
+    "all_runs_mnist": true,
+    "all_runs_finite": true,
+    "static_dense_mean_end_accuracy": 0.51859375,
+    "ccdn_0a_rewire_events": 1,
+    "rigl_layer_rewire_count": 3
+  },
+  "pilot_protocol": {
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "permutations": 100,
+    "batches_per_permutation": 50,
+    "batch_size": 128,
+    "hidden_sizes": [
+      512,
+      512
+    ],
+    "sparse_density": 0.2,
+    "evaluation_every_steps": 10,
+    "eval_batches": 10,
+    "structural_interval": 64,
+    "shared_learning_rate": 0.1
+  },
+  "pilot_runs_all_completed": true,
+  "pilot_summary_rows": 21,
+  "per_permutation_rows": 2100,
+  "paired_values": 72,
+  "sparse_logical_active_parameters_each_seed": 134769,
+  "artifact_size_bytes": 187015,
+  "raw_checkpoints_committed": false,
+  "dataset_committed": false
+}

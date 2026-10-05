@@ -1,0 +1,8 @@
+model,comparison_group,logical_active_parameters,actual_tensor_parameters,model_tensor_memory_bytes,auxiliary_algorithm_state_memory_bytes,optimizer_state_memory_bytes,estimated_total_training_state_memory_bytes,estimated_dense_macs_per_example,runtime_seconds
+ccdn_0a,primary_sparse_resource_matched,134769.0,669706.0,3347496.0,2674688.0,0.0,6022184.0,668672.0,35.069430264023445
+continual_backprop,contextual_dense_reference,669706.0,669706.0,2678824.0,12288.0,0.0,2691112.0,668672.0,24.104660777995985
+continual_backprop_sparse,primary_sparse_resource_matched,134769.0,669706.0,3347496.0,12288.0,0.0,3359784.0,668672.0,27.943985860988807
+rigl,primary_sparse_resource_matched,134769.0,669706.0,3347496.0,0.0,0.0,3347496.0,668672.0,31.015046457992867
+selective_reset,primary_sparse_resource_matched,134769.0,669706.0,3347496.0,2674688.0,0.0,6022184.0,668672.0,65.02689830597956
+static_dense,contextual_dense_reference,669706.0,669706.0,2678824.0,0.0,0.0,2678824.0,668672.0,23.7683219583317
+static_sparse,primary_sparse_resource_matched,134769.0,669706.0,3347496.0,0.0,0.0,3347496.0,668672.0,27.98020945834772

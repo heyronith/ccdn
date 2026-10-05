@@ -1,7 +1,16 @@
 from __future__ import annotations
 import torch
 from torch import nn
-from .initialization import initialize_linear_uniform_
+
+
+def dense_candidate_gradient_scores(model, layer_index):
+    """Dense |dL/dW| estimate for every masked candidate edge."""
+    inp=model._layer_inputs[layer_index]
+    delta=model._layer_deltas[layer_index]
+    layer=model.layers[layer_index]
+    if inp is None or delta is None:
+        return torch.zeros_like(layer.weight)
+    return (delta.transpose(0,1) @ inp).abs()
 
 class SparseLinear(nn.Module):
     def __init__(self, in_features, out_features, density=0.2, bias=True, generator=None):
@@ -21,7 +30,8 @@ class SparseLinear(nn.Module):
     def forward(self, x): return torch.nn.functional.linear(x, self.weight * self.mask, self.bias)
     def reset_weight(self, out_index: int, in_index: int):
         """Reinitialize one stored value at this layer's Linear fan-in scale."""
-        initialize_linear_uniform_(self.weight[out_index, in_index], self.in_features)
+        bound=1.0/self.in_features**0.5
+        with torch.no_grad(): self.weight[out_index, in_index].uniform_(-bound,bound)
     @property
     def active_count(self): return int(self.mask.sum().item())
 
@@ -42,6 +52,31 @@ class SparseMLP(nn.Module):
                 x=torch.relu(x); self.last_activations.append(x)
         return x
     def _save_delta(self,idx,grad): self._layer_deltas[idx]=grad.detach()
+    def reset_unit(self, layer_index: int, unit_index: int):
+        """Reinitialize active weights and bias for one hidden unit, retaining masks."""
+        layer=self.layers[layer_index]
+        incoming=layer.mask[unit_index].nonzero().flatten()
+        if incoming.numel():
+            bound=1.0/layer.in_features**0.5
+            values=torch.empty(incoming.numel(),device=layer.weight.device,dtype=layer.weight.dtype).uniform_(-bound,bound)
+            with torch.no_grad():
+                layer.weight[unit_index,incoming]=values
+        with torch.no_grad():
+            if layer.bias is not None:
+                bound=1.0/layer.in_features**0.5
+                layer.bias[unit_index].uniform_(-bound,bound)
+            if incoming.numel() < layer.in_features:
+                layer.weight[unit_index,~layer.mask[unit_index]]=0
+        nxt=self.layers[layer_index+1]
+        outgoing=nxt.mask[:,unit_index].nonzero().flatten()
+        if outgoing.numel():
+            bound=1.0/nxt.in_features**0.5
+            values=torch.empty(outgoing.numel(),device=nxt.weight.device,dtype=nxt.weight.dtype).uniform_(-bound,bound)
+            with torch.no_grad():
+                nxt.weight[outgoing,unit_index]=values
+        with torch.no_grad():
+            if outgoing.numel() < nxt.out_features:
+                nxt.weight[~nxt.mask[:,unit_index],unit_index]=0
     @property
     def active_count(self): return sum(l.active_count for l in self.layers)+sum(l.bias.numel() for l in self.layers if l.bias is not None)
     @property

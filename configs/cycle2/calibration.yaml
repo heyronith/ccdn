@@ -1,0 +1,11 @@
+name: cycle2_lr_calibration
+learning_rates: [0.01, 0.03, 0.10]
+models: [static_dense, static_sparse]
+seed: 11
+base:
+  experiment: {name: cycle2_lr_calibration, seed: 11, device: auto, deterministic: true}
+  stream: {dataset_root: ./data, permutations: 5, batches_per_permutation: 20, batch_size: 128, synthetic: false, allow_synthetic_fallback: false}
+  model: {hidden_sizes: [512, 512], density: 0.20}
+  optimizer: {type: sgd, momentum: 0.0}
+  evaluation: {eval_every_steps: 10, eval_batches: 10}
+  output: {root: results}

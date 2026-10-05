@@ -1,0 +1,7 @@
+learning_rate,model,comparison_group,seed,permutations,batches_per_permutation,mean_end_accuracy,run_directory,selection_mean_static_dense_sparse,chosen
+0.01,static_dense,contextual_dense_reference,11,5,20,0.09875,results/cycle2_lr_calibration/static_dense/seed_11/20261004T214932_5bb3ea3c,0.096328125,False
+0.01,static_sparse,primary_sparse_resource_matched,11,5,20,0.09390625,results/cycle2_lr_calibration/static_sparse/seed_11/20261004T214933_cdd0c93d,0.096328125,False
+0.03,static_dense,contextual_dense_reference,11,5,20,0.19765625,results/cycle2_lr_calibration/static_dense/seed_11/20261004T214933_c08f3913,0.146171875,False
+0.03,static_sparse,primary_sparse_resource_matched,11,5,20,0.0946875,results/cycle2_lr_calibration/static_sparse/seed_11/20261004T214934_6be3a4e9,0.146171875,False
+0.1,static_dense,contextual_dense_reference,11,5,20,0.51859375,results/cycle2_lr_calibration/static_dense/seed_11/20261004T214935_3e63f88c,0.323671875,True
+0.1,static_sparse,primary_sparse_resource_matched,11,5,20,0.12875,results/cycle2_lr_calibration/static_sparse/seed_11/20261004T214935_0eb61f5e,0.323671875,True

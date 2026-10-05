@@ -17,3 +17,12 @@ def clear_optimizer_entries(optimizer, parameter, mask):
     state=optimizer.state.get(parameter,{})
     for value in state.values():
         if torch.is_tensor(value) and value.shape == parameter.shape: value.masked_fill_(mask,0)
+
+def enforce_sparse_state(model,optimizer):
+    """Project inactive weights and matching optimizer slots to exact zero."""
+    with torch.no_grad():
+        for layer in getattr(model,"layers",[]):
+            if not hasattr(layer,"mask"): continue
+            layer.weight.mul_(layer.mask)
+            inactive=~layer.mask
+            clear_optimizer_entries(optimizer,layer.weight,inactive)
