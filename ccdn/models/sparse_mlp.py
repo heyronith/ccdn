@@ -1,6 +1,7 @@
 from __future__ import annotations
 import torch
 from torch import nn
+from .initialization import initialize_linear_uniform_
 
 class SparseLinear(nn.Module):
     def __init__(self, in_features, out_features, density=0.2, bias=True, generator=None):
@@ -18,6 +19,9 @@ class SparseLinear(nn.Module):
         self.weight.register_hook(lambda grad: grad * self.mask)
         with torch.no_grad(): self.weight.mul_(self.mask)
     def forward(self, x): return torch.nn.functional.linear(x, self.weight * self.mask, self.bias)
+    def reset_weight(self, out_index: int, in_index: int):
+        """Reinitialize one stored value at this layer's Linear fan-in scale."""
+        initialize_linear_uniform_(self.weight[out_index, in_index], self.in_features)
     @property
     def active_count(self): return int(self.mask.sum().item())
 

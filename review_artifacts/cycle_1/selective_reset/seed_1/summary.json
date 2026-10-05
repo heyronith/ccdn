@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-10-05T02:36:11.154905+00:00",
+  "git_commit": "d09a937d8536d48390911f0f654fedd555602036",
+  "config": {
+    "experiment": {
+      "name": "smoke",
+      "device": "auto",
+      "deterministic": true,
+      "seed": 1
+    },
+    "stream": {
+      "dataset_root": "./data",
+      "permutations": 20,
+      "batches_per_permutation": 2,
+      "batch_size": 32,
+      "synthetic": true
+    },
+    "model": {
+      "hidden_sizes": [
+        256,
+        256
+      ],
+      "density": 0.2,
+      "type": "selective_reset"
+    },
+    "optimizer": {
+      "type": "sgd",
+      "lr": 0.03,
+      "momentum": 0.0
+    },
+    "evaluation": {
+      "eval_every_steps": 2,
+      "eval_batches": 1
+    },
+    "output": {
+      "root": "results"
+    },
+    "algorithm": {
+      "reset_interval": 5,
+      "reset_fraction": 0.01,
+      "utility_decay": 0.9
+    },
+    "runtime_seconds": 0.8620303749339655
+  },
+  "seed": 1,
+  "device": "cpu",
+  "model_type": "selective_reset",
+  "number_of_permutations": 20,
+  "samples_per_permutation": 64,
+  "updates_per_permutation": 2,
+  "active_parameters": 54282,
+  "total_parameters": 269322,
+  "auxiliary_state_estimate_bytes": 1075200,
+  "optimizer_state_estimate_bytes": 0,
+  "runtime_seconds": 0.8620303749339655,
+  "primary_metrics": {
+    "final_eval_accuracy": 0.0625,
+    "mean_adaptation_auc": 0.0625,
+    "early_25pct_accuracy": 0.0625,
+    "late_25pct_accuracy": 0.0625
+  },
+  "resources": {
+    "total_possible_parameters": 269322,
+    "actual_tensor_parameters": 269322,
+    "logical_active_parameters": 54282,
+    "active_parameters": 54282,
+    "trainable_active_parameters": 54282,
+    "model_tensor_memory_bytes": 1346088,
+    "auxiliary_algorithm_state_memory_bytes": 1075200,
+    "optimizer_state_memory_bytes": 0,
+    "estimated_total_training_state_memory_bytes": 2421288,
+    "estimated_dense_macs_per_example": 268800
+  },
+  "data_source": "synthetic",
+  "synthetic_fallback": false
+}

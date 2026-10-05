@@ -1,0 +1,27 @@
+experiment:
+  name: smoke
+  device: auto
+  deterministic: true
+  seed: 1
+stream:
+  dataset_root: ./data
+  permutations: 20
+  batches_per_permutation: 2
+  batch_size: 32
+  synthetic: true
+model:
+  hidden_sizes:
+  - 256
+  - 256
+  density: 0.2
+  type: static_dense
+optimizer:
+  type: sgd
+  lr: 0.03
+  momentum: 0.0
+evaluation:
+  eval_every_steps: 2
+  eval_batches: 1
+output:
+  root: results
+runtime_seconds: 0.5166540000354871

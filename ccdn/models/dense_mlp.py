@@ -1,6 +1,7 @@
 from __future__ import annotations
 import torch
 from torch import nn
+from .initialization import initialize_linear_uniform_
 
 class DenseMLP(nn.Module):
     """Configurable fully-connected MLP. Hidden-layer IO is exposed for algorithms."""
@@ -29,8 +30,8 @@ class DenseMLP(nn.Module):
     def reset_unit(self, layer_index: int, unit_index: int):
         """Reinitialize hidden unit's incoming row/bias and outgoing column."""
         layer = self.layers[layer_index]
-        with torch.no_grad():
-            nn.init.kaiming_uniform_(layer.weight[unit_index:unit_index+1], a=5 ** 0.5)
-            if layer.bias is not None: layer.bias[unit_index].zero_()
-            nxt = self.layers[layer_index + 1]
-            nn.init.kaiming_uniform_(nxt.weight[:, unit_index:unit_index+1], a=5 ** 0.5)
+        initialize_linear_uniform_(layer.weight[unit_index], layer.in_features)
+        if layer.bias is not None:
+            initialize_linear_uniform_(layer.bias[unit_index], layer.in_features)
+        nxt = self.layers[layer_index + 1]
+        initialize_linear_uniform_(nxt.weight[:, unit_index], nxt.in_features)
