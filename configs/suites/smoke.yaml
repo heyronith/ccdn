@@ -1,0 +1,14 @@
+name: smoke
+seeds: [1, 2]
+models: [static_dense, static_sparse, selective_reset, continual_backprop, rigl]
+base:
+  experiment: {name: smoke, device: auto, deterministic: true}
+  stream: {dataset_root: ./data, permutations: 20, batches_per_permutation: 2, batch_size: 32, synthetic: true}
+  model: {hidden_sizes: [256, 256], density: 0.2}
+  optimizer: {type: sgd, lr: 0.03, momentum: 0.0}
+  evaluation: {eval_every_steps: 2, eval_batches: 1}
+  output: {root: results}
+algorithm_overrides:
+  selective_reset: {reset_interval: 5, reset_fraction: 0.01, utility_decay: 0.9}
+  continual_backprop: {replacement_interval: 5, replacement_fraction: 0.02, maturity: 3, utility_decay: 0.9}
+  rigl: {rewire_interval: 5, rewire_fraction: 0.1}

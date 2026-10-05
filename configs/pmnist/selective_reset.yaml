@@ -1,0 +1,7 @@
+experiment: {name: pmnist, seed: 1, device: auto, deterministic: true}
+stream: {dataset_root: ./data, permutations: 20, batches_per_permutation: 20, batch_size: 128}
+model: {type: selective_reset, hidden_sizes: [256, 256], density: 0.2}
+algorithm: {reset_interval: 100, reset_fraction: 0.01, utility_decay: 0.99}
+optimizer: {type: sgd, lr: 0.01, momentum: 0.0}
+evaluation: {eval_every_steps: 10, eval_batches: 2}
+output: {root: results}
