@@ -12,6 +12,7 @@ import copy
 import csv
 import datetime as dt
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -124,17 +125,55 @@ def _sparse_diagnostics(model, algorithm, initial_masks):
     result = {}
     if isinstance(model, SparseMLP):
         current = [layer.mask.detach().cpu() for layer in model.layers]
-        for index, (layer, before, now) in enumerate(zip(model.layers, initial_masks, current)):
+        overlap = mask_overlap_fractions(initial_masks, current)
+        for index, (layer, now) in enumerate(zip(model.layers, current)):
             result[f"active_edges_layer_{index}"] = int(now.sum())
-            result[f"initial_mask_overlap_fraction_layer_{index}"] = float((before.cpu() == now).float().mean())
+            result[f"initial_mask_overlap_fraction_layer_{index}"] = overlap[f"initial_mask_overlap_fraction_layer_{index}"]
         result["active_edges_total"] = int(sum(int(mask.sum()) for mask in current))
-        before_flat = torch.cat([m.cpu().flatten() for m in initial_masks])
-        now_flat = torch.cat([m.flatten() for m in current])
-        result["initial_mask_overlap_fraction_overall"] = float((before_flat == now_flat).float().mean())
+        result["initial_mask_overlap_fraction_overall"] = overlap["initial_mask_overlap_fraction_overall"]
     metrics = algorithm.metrics()
     for key, value in metrics.items():
         result[f"algorithm_{key}"] = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list, tuple)) else value
     return result
+
+
+def mask_overlap_fractions(initial_masks, current_masks):
+    """Fraction of initially active edges that remain active, per layer/overall."""
+    if len(initial_masks) != len(current_masks):
+        raise ValueError("initial/current mask layer counts differ")
+    result = {}
+    total_initial = 0
+    total_retained = 0
+    for index, (initial, current) in enumerate(zip(initial_masks, current_masks)):
+        initial = torch.as_tensor(initial, dtype=torch.bool).cpu()
+        current = torch.as_tensor(current, dtype=torch.bool).cpu()
+        if initial.shape != current.shape:
+            raise ValueError(f"initial/current mask shapes differ in layer {index}")
+        denominator = int(initial.sum())
+        retained = int((initial & current).sum())
+        result[f"initial_mask_overlap_fraction_layer_{index}"] = retained / denominator if denominator else 1.0
+        total_initial += denominator
+        total_retained += retained
+    result["initial_mask_overlap_fraction_overall"] = (
+        total_retained / total_initial if total_initial else 1.0
+    )
+    return result
+
+
+def finite_check_due(global_step):
+    return int(global_step) > 0 and int(global_step) % 4096 == 0
+
+
+def atomic_write_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    with open(temp, "w", encoding="utf8") as handle:
+        json.dump(value, handle, indent=2, allow_nan=False)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    temp.replace(path)
 
 
 def _assert_finite_state(model, algorithm):
@@ -431,7 +470,7 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
             x, y = stream.sample(task, position, device)
             # Learner-facing API contains only x and y.
             prediction, loss = _learner_step(model, algorithm, optimizer, x, y)
-            if (algorithm.global_step + 1) % 4096 == 0:
+            if finite_check_due(algorithm.global_step):
                 _assert_finite_state(model, algorithm)
             correct += int(prediction == int(y.item()))
             loss_sum += loss
@@ -477,6 +516,13 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
             checkpoint_path = output_dir / f"checkpoint_task_{task_index + 1:03d}.pt"
             _save_task_checkpoint(checkpoint_path, model, algorithm, optimizer,
                                   task_index, lifetime_examples, cumulative_runtime, cfg)
+        current_edges = ([int(layer.mask.sum().item()) for layer in model.layers]
+                         if isinstance(model, SparseMLP) else [])
+        if current_edges != initial_counts:
+            raise RuntimeError(
+                f"task-boundary active edge mismatch: expected {initial_counts}, "
+                f"found {current_edges}"
+            )
         heartbeat = {
             "completed_task_index": task_index,
             "examples_seen_in_task": examples_per_task,
@@ -485,15 +531,17 @@ def run_online_experiment(config, *, stream=None, output_dir=None,
             "task_sequence_sha256": task_sequence_hash,
             "online_accuracy": correct / examples_per_task,
             "finite_state": True,
-            "active_edges": initial_counts,
+            "expected_active_edges_by_layer": initial_counts,
+            "current_active_edges_by_layer": current_edges,
+            "checkpoint_valid": True,
             "checkpoint": str(checkpoint_path),
             "algorithm": algorithm.metrics(),
         }
-        (output_dir / "heartbeat.json").write_text(json.dumps(heartbeat, indent=2, allow_nan=False) + "\n")
+        atomic_write_json(output_dir / "heartbeat.json", heartbeat)
         status_path = cfg.get("runtime", {}).get("status_path")
         if status_path:
-            Path(status_path).write_text(json.dumps({"state": "RUNNING", "method": algorithm_name,
-                                                     **heartbeat}, indent=2, allow_nan=False) + "\n")
+            atomic_write_json(status_path, {"state": "RUNNING", "method": algorithm_name,
+                                            **heartbeat})
         print(f"completed task {task_index + 1}/{tasks_requested}: "
               f"online_accuracy={correct / examples_per_task:.6f}, "
               f"updates={lifetime_examples}, checkpoint={checkpoint_path}",
@@ -595,14 +643,14 @@ def main():
     except FloatingPointError as exc:
         status_path = config.get("runtime", {}).get("status_path")
         if status_path:
-            Path(status_path).write_text(json.dumps({"state": "ABORTED_NONFINITE", "reason": str(exc),
-                                                     "method": config.get("model", {}).get("type")}, indent=2) + "\n")
+            atomic_write_json(status_path, {"state": "ABORTED_NONFINITE", "reason": str(exc),
+                                            "method": config.get("model", {}).get("type")})
         raise
     except Exception as exc:
         status_path = config.get("runtime", {}).get("status_path")
         if status_path:
-            Path(status_path).write_text(json.dumps({"state": "ABORTED_INVARIANT", "reason": str(exc),
-                                                     "method": config.get("model", {}).get("type")}, indent=2) + "\n")
+            atomic_write_json(status_path, {"state": "ABORTED_INVARIANT", "reason": str(exc),
+                                            "method": config.get("model", {}).get("type")})
         raise
 
 

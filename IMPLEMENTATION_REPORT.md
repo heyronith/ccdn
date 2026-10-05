@@ -47,3 +47,17 @@ Long scientific run: **NOT EXECUTED.** No 150-task / 9,000,000-update experiment
 Warnings: Phase A preflight is a software integration check and is not scientific evidence. The full static-sparse gate and subsequent comparisons require independent review and the normal terminal command.
 
 Ready for review: YES — protocol-ready Phase A only; not approval to execute the long run.
+
+## Cycle 2C — Phase A final hardening
+
+Base commit: `6a0b8b4de8c47e73ea310cc450b940de338900ba`
+Final commit: reported in handoff
+Branch: `cycle-2c-ccdn-failure-regime`
+
+Tests: `.venv/bin/python -m pytest -q` — 72 passed, 0 failed. Synthetic regression: 10/10.
+
+Hardening: rolling checkpoint recovery prefers valid latest, falls back to valid previous, and refuses invalid/missing state; active-mask overlap counts retained initially active edges; terminal execution requires an exact reviewer-approved full SHA; task-boundary heartbeats report and assert expected/current edge budgets, finite state, and checkpoint health; status/heartbeat JSON writes are atomic; finite checks occur after each completed 4,096th update.
+
+Real-MNIST preflight: PASS — all four sparse methods, 8,192 examples each; identical paired initialization and state through update 8,191; first intervention at 8,192; 99,533 logical active parameters; finite state, checkpoint roundtrip, and edge conservation passed. Synthetic fallback was false.
+
+Long scientific run: **NOT EXECUTED.** No 150-task method was started. The approved terminal command is `./scripts/run_cycle2c.sh <FULL_SHA>` after independent review.

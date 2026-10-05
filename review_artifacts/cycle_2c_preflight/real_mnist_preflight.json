@@ -48,7 +48,7 @@
       "structural_event_steps": "[]",
       "structural_metrics": "{}",
       "checkpoint_roundtrip": true,
-      "runtime_seconds": 8.664544124971144,
+      "runtime_seconds": 8.569594917003997,
       "finite_state": true,
       "active_budget_conserved": true
     },
@@ -67,7 +67,7 @@
       "structural_event_steps": "[8192]",
       "structural_metrics": "{\"edges_ranked\": 98515, \"reset_count\": 4926, \"reset_event_steps\": [8192], \"topology_events\": 1, \"utility_elements_updated\": 807034880, \"weights_reset\": 4926}",
       "checkpoint_roundtrip": true,
-      "runtime_seconds": 12.618570041959174,
+      "runtime_seconds": 12.663451125030406,
       "finite_state": true,
       "active_budget_conserved": true
     },
@@ -86,7 +86,7 @@
       "structural_event_steps": "[8192]",
       "structural_metrics": "{\"candidate_gradient_elements_scored\": 492576, \"edges_grown\": 4923, \"edges_pruned\": 4923, \"edges_ranked\": 98515, \"rigl_reference_drop_fraction\": 0.05, \"rigl_reference_edges_grown\": 4923, \"rigl_reference_edges_pruned\": 4923, \"rigl_reference_rewire_events\": 1, \"structural_event_steps\": [8192], \"topology_events\": 1}",
       "checkpoint_roundtrip": true,
-      "runtime_seconds": 7.764622709015384,
+      "runtime_seconds": 7.773259249981493,
       "finite_state": true,
       "active_budget_conserved": true
     },
@@ -105,7 +105,7 @@
       "structural_event_steps": "[8192]",
       "structural_metrics": "{\"candidate_gradient_elements_scored\": 492576, \"cumulative_edge_turnover\": 9852, \"edges_grown\": 4926, \"edges_pruned\": 4926, \"edges_ranked\": 98515, \"layer_0_active_edges\": 52685, \"layer_1_active_edges\": 22579, \"layer_2_active_edges\": 22579, \"layer_3_active_edges\": 672, \"mean_active_utility\": 0.00024458198458887637, \"median_active_utility\": 2.8154865503893234e-05, \"rewire_event_count\": 1, \"std_active_utility\": 0.0006426334148272872, \"structural_event_steps\": [8192], \"topology_events\": 1, \"total_edges_grown\": 4926, \"total_edges_pruned\": 4926, \"utility_elements_updated\": 807034880}",
       "checkpoint_roundtrip": true,
-      "runtime_seconds": 12.505210874951445,
+      "runtime_seconds": 12.644278749939986,
       "finite_state": true,
       "active_budget_conserved": true
     }

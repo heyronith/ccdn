@@ -12,5 +12,15 @@
   "resume_skips_completed_and_runs_remaining": true,
   "resume_identity_mismatch_refused": true,
   "protocol_hash_mismatch_refused": true,
-  "dirty_git_status_detected": true
+  "dirty_git_status_detected": true,
+  "rolling_checkpoint_latest_preferred": true,
+  "rolling_checkpoint_previous_recovery_corrupt_latest": true,
+  "rolling_checkpoint_previous_recovery_missing_latest": true,
+  "rolling_checkpoint_invalid_pair_refused": true,
+  "reviewer_approved_sha_required_and_matched": true,
+  "visible_parent_task_heartbeat": true,
+  "heartbeat_status_atomic_and_transient_read_safe": true,
+  "task_boundary_active_edge_budget_asserted": true,
+  "finite_check_every_4096_completed_updates": true,
+  "active_overlap_counts_retained_initial_edges_only": true
 }

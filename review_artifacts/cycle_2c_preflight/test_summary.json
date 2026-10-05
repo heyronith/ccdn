@@ -1,6 +1,6 @@
 {
   "command": ".venv/bin/python -m pytest -q",
-  "passed": 60,
+  "passed": 72,
   "failed": 0,
   "synthetic_regression_command": ".venv/bin/python -m ccdn.experiments.run_matrix --suite configs/suites/smoke.yaml",
   "synthetic_regression_completed": 10,
@@ -8,5 +8,15 @@
   "real_mnist_preflight_command": ".venv/bin/python -m scripts.preflight_cycle2c",
   "real_mnist_preflight_methods": 4,
   "real_mnist_examples_per_method": 8192,
-  "real_mnist_preflight_status": "PASS"
+  "real_mnist_preflight_status": "PASS",
+  "checkpoint_recovery_cases": {
+    "latest_valid": "PASS",
+    "latest_corrupt_previous_valid": "PASS",
+    "latest_missing_previous_valid": "PASS",
+    "both_corrupt": "PASS_REFUSED",
+    "both_missing": "PASS_REFUSED"
+  },
+  "reviewer_approved_sha_enforcement": "PASS",
+  "atomic_status_heartbeat_and_parent_reporting": "PASS",
+  "active_mask_overlap_and_finite_cadence": "PASS"
 }

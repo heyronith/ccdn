@@ -5,7 +5,8 @@ import torch
 
 from ccdn.algorithms.ccdn_0a import CCDN0A
 from ccdn.baselines.selective_reset import SelectiveReset
-from ccdn.experiments.online_permuted_mnist import _build_online_learner, _learner_step
+from ccdn.experiments.online_permuted_mnist import (_build_online_learner, _learner_step,
+    atomic_write_json, finite_check_due, mask_overlap_fractions)
 from ccdn.models.sparse_mlp import SparseMLP
 from ccdn.official_reference.rigl import RigLReference
 from ccdn.utils.reproducibility import seed_everything
@@ -61,6 +62,36 @@ def test_frozen_sparse_capacity_is_exactly_99533_parameters():
 
 def test_no_task_boundary_is_exposed_to_learner_step():
     assert list(inspect.signature(_learner_step).parameters) == ["model", "algorithm", "optimizer", "x", "y"]
+
+
+def test_initial_active_mask_overlap_uses_only_initially_active_edges():
+    initial = [torch.tensor([[1, 1, 0], [0, 1, 0]], dtype=torch.bool),
+               torch.tensor([[1, 0], [1, 1]], dtype=torch.bool),
+               torch.tensor([[1, 0]], dtype=torch.bool),
+               torch.tensor([[1, 1]], dtype=torch.bool)]
+    current = [torch.tensor([[1, 0, 1], [1, 1, 0]], dtype=torch.bool),
+               torch.tensor([[0, 0], [1, 0]], dtype=torch.bool),
+               torch.tensor([[0, 1]], dtype=torch.bool),
+               torch.tensor([[1, 0]], dtype=torch.bool)]
+    overlap = mask_overlap_fractions(initial, current)
+    assert overlap["initial_mask_overlap_fraction_layer_0"] == 2 / 3
+    assert overlap["initial_mask_overlap_fraction_layer_1"] == 1 / 3
+    assert overlap["initial_mask_overlap_fraction_layer_2"] == 0
+    assert overlap["initial_mask_overlap_fraction_layer_3"] == 1 / 2
+    assert overlap["initial_mask_overlap_fraction_overall"] == 4 / 9
+
+
+def test_finite_check_uses_incremented_optimizer_step():
+    assert not finite_check_due(4095)
+    assert finite_check_due(4096)
+    assert not finite_check_due(4097)
+
+
+def test_child_heartbeat_json_helper_replaces_atomically(tmp_path):
+    target = tmp_path / "heartbeat.json"
+    atomic_write_json(target, {"completed_task_index": 0, "finite_state": True})
+    assert json.loads(target.read_text()) == {"completed_task_index": 0, "finite_state": True}
+    assert list(tmp_path.iterdir()) == [target]
 
 
 def test_structural_methods_align_on_completed_update_8192_equivalent():

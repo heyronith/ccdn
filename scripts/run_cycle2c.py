@@ -8,6 +8,7 @@ static-sparse gate before allowing any comparison method to launch.
 from __future__ import annotations
 
 import hashlib
+import argparse
 import json
 import os
 import platform
@@ -145,9 +146,92 @@ def verify_starting_states(stream):
 
 
 def atomic_json(path: Path, value):
-    temp = path.with_suffix(path.suffix + ".tmp")
-    temp.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + f".{os.getpid()}.{time.time_ns()}.tmp")
+    with temp.open("w", encoding="utf8") as handle:
+        handle.write(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
     temp.replace(path)
+
+
+def load_valid_checkpoint(path: Path):
+    """Load an official rolling checkpoint, rejecting partial/invalid payloads."""
+    try:
+        payload = torch.load(path, map_location="cpu", weights_only=False)
+        required = {"model", "optimizer", "algorithm", "completed_task_index",
+                    "lifetime_examples_seen", "rng_state", "config"}
+        if not isinstance(payload, dict) or not required.issubset(payload):
+            raise ValueError("checkpoint payload is incomplete")
+        return payload
+    except Exception:
+        return None
+
+
+def select_resume_checkpoint(result_dir: Path):
+    """Select latest, then previous; never treats an abandoned temp as state."""
+    latest = result_dir / "checkpoint_latest.pt"
+    previous = result_dir / "checkpoint_previous.pt"
+    temp = result_dir / "checkpoint_latest.pt.tmp"
+    if latest.exists():
+        payload = load_valid_checkpoint(latest)
+        if payload is not None:
+            if temp.exists():
+                temp.unlink()
+                print(f"[CYCLE2C] removed abandoned temporary checkpoint: {temp}")
+            return latest, payload, False
+    else:
+        payload = None
+    previous_payload = load_valid_checkpoint(previous) if previous.exists() else None
+    if previous_payload is not None:
+        print(f"[CYCLE2C] RECOVERY: using checkpoint_previous.pt: {previous}")
+        # Remove a corrupt/partial latest so the next rotation cannot overwrite
+        # the valid previous checkpoint with that unusable file.
+        latest.unlink(missing_ok=True)
+        temp.unlink(missing_ok=True)
+        return previous, previous_payload, True
+    if temp.exists():
+        temp.unlink()
+        print(f"[CYCLE2C] removed abandoned temporary checkpoint: {temp}")
+    if latest.exists() or previous.exists():
+        raise RuntimeError("no valid latest or previous rolling checkpoint; refusing fresh run")
+    raise RuntimeError("result directory has no authoritative rolling checkpoint; refusing fresh run")
+
+
+def validate_approved_sha(approved_sha, actual_sha):
+    if not approved_sha:
+        raise RuntimeError("ABORTED_PROTOCOL_MISMATCH: reviewer-approved SHA is required")
+    if len(approved_sha) != 40 or any(ch not in "0123456789abcdefABCDEF" for ch in approved_sha):
+        raise RuntimeError("ABORTED_PROTOCOL_MISMATCH: reviewer-approved SHA must be a full 40-character SHA")
+    if approved_sha.lower() != actual_sha.lower():
+        raise RuntimeError(f"ABORTED_PROTOCOL_MISMATCH: approved SHA {approved_sha} != HEAD {actual_sha}")
+    return True
+
+
+def read_heartbeat(path: Path):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def print_heartbeat(method, heartbeat):
+    task = int(heartbeat["completed_task_index"]) + 1
+    updates = int(heartbeat["optimizer_updates"])
+    expected = heartbeat.get("expected_active_edges_by_layer", [])
+    current = heartbeat.get("current_active_edges_by_layer", [])
+    edge_health = current == expected
+    print(f"[CYCLE2C] {method}\n"
+          f"Task {task}/150\n"
+          f"Accuracy: {float(heartbeat['online_accuracy']):.4f}\n"
+          f"Updates: {updates:,} / 9,000,000\n"
+          f"Expected active edges: {expected}\n"
+          f"Current active edges:  {current}\n"
+          f"Edge budget: {'PASS' if edge_health else 'FAIL'}\n"
+          f"Finite state: {'PASS' if heartbeat.get('finite_state') else 'FAIL'}\n"
+          f"Checkpoint: {'PASS' if heartbeat.get('checkpoint_valid') else 'FAIL'}",
+          flush=True)
+    return edge_health and bool(heartbeat.get("finite_state")) and bool(heartbeat.get("checkpoint_valid"))
 
 
 def run_child(method, run_root, status_path, protocol_hash, commit):
@@ -162,28 +246,17 @@ def run_child(method, run_root, status_path, protocol_hash, commit):
     config_path.write_text(yaml.safe_dump(config, sort_keys=False))
     checkpoint = result_dir / "checkpoint_latest.pt"
     completed_summary = None
+    selected_checkpoint = None
+    saved = None
     recovered_previous = False
     if result_dir.exists():
         if (result_dir / "summary.json").exists():
             candidate = json.loads((result_dir / "summary.json").read_text())
             if candidate.get("tasks_completed") == 150:
                 completed_summary = candidate
-        if not checkpoint.exists():
-            raise RuntimeError(f"incomplete run has no rolling checkpoint: {result_dir}")
-        try:
-            saved = torch.load(checkpoint, map_location="cpu", weights_only=False)
-        except Exception as latest_error:
-            previous = result_dir / "checkpoint_previous.pt"
-            if not previous.exists():
-                raise RuntimeError(f"latest checkpoint corrupt and no previous checkpoint: {latest_error}")
-            try:
-                torch.load(previous, map_location="cpu", weights_only=False)
-            except Exception as previous_error:
-                raise RuntimeError(f"latest and previous checkpoints corrupt: {latest_error}; {previous_error}")
-            print(f"[CYCLE2C] latest checkpoint unreadable; recovering from previous: {previous}")
-            checkpoint = previous
-            recovered_previous = True
-            saved = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        selected_checkpoint, saved, recovered_previous = select_resume_checkpoint(result_dir)
+        if selected_checkpoint is None:
+            raise RuntimeError(f"existing result directory has no resumable rolling checkpoint: {result_dir}")
         expected = {"git_sha": commit, "protocol_hash": protocol_hash, "method": method,
                     "config": config, "task_sequence_sha256": EXPECTED_STREAM}
         try:
@@ -194,18 +267,27 @@ def run_child(method, run_root, status_path, protocol_hash, commit):
             return completed_summary
     cmd = [sys.executable, "-m", "ccdn.experiments.online_permuted_mnist",
            "--config", str(config_path), "--output-dir", str(result_dir)]
-    if checkpoint.exists(): cmd += ["--resume-from", str(checkpoint)]
+    if selected_checkpoint is not None: cmd += ["--resume-from", str(selected_checkpoint)]
     log_path = run_root / "terminal.log"
     with open(log_path, "a", encoding="utf8") as log:
         proc = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
         heartbeat = result_dir / "heartbeat.json"
         last_heartbeat = time.time()
+        last_reported_task = -1
         while proc.poll() is None:
-            time.sleep(5)
-            if heartbeat.exists():
-                current = heartbeat.stat().st_mtime
-                if current > last_heartbeat:
-                    last_heartbeat = current
+            time.sleep(1)
+            current_heartbeat = read_heartbeat(heartbeat) if heartbeat.exists() else None
+            if current_heartbeat is not None:
+                task_index = int(current_heartbeat.get("completed_task_index", -1))
+                if task_index > last_reported_task:
+                    healthy = print_heartbeat(method, current_heartbeat)
+                    last_reported_task = task_index
+                    last_heartbeat = time.time()
+                    if not healthy:
+                        proc.terminate()
+                        try: proc.wait(timeout=30)
+                        except subprocess.TimeoutExpired: proc.kill()
+                        raise RuntimeError("task-boundary heartbeat health check failed")
             # 30-minute timeout also covers a child that never writes its first heartbeat.
             if time.time() - last_heartbeat > 1800:
                 proc.terminate()
@@ -249,12 +331,19 @@ def gated_sequence(run_method, cached=None):
     return "COMPLETE", summaries
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("approved_sha", nargs="?", help="full reviewer-approved HEAD SHA")
+    args = parser.parse_args(argv)
     try:
+        commit, branch, clean, status = git_info()
+        validate_approved_sha(args.approved_sha, commit)
+        # Store the canonical Git spelling so the manifest field exactly equals
+        # git_commit even if the caller supplied uppercase hexadecimal.
+        args.approved_sha = commit
         hashes = file_hashes()
         verify_lock_file(hashes)
         protocol_hash = protocol_digest(hashes)
-        commit, branch, clean, status = git_info()
         if branch != "cycle-2c-ccdn-failure-regime" or not clean:
             raise RuntimeError(f"run requires clean frozen branch; branch={branch}, clean={clean}, status={status!r}")
     except Exception as exc:
@@ -279,6 +368,7 @@ def main():
         manifest = {
             "run_id": run_id, "timestamp": datetime.now(timezone.utc).isoformat(),
             "git_commit": commit, "git_branch": branch, "git_dirty": False,
+            "reviewer_approved_git_sha": args.approved_sha,
             "python_version": platform.python_version(), "pytorch_version": torch.__version__,
             "device": device, "platform": platform.platform(), "protocol_hash": protocol_hash,
             "protocol_source_sha256": hashes, "task_sequence_sha256": sequence_hash,

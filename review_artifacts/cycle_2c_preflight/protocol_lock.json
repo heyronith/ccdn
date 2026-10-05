@@ -1,12 +1,12 @@
 {
   "cycle": "2C",
-  "protocol_hash": "f6f19bfd64f7859116f92d3a822d15de543520df050ea8e7d009cbfc506c0e2e",
+  "protocol_hash": "019e306798b19183d1b4ee32a7c3ee200ad176f100c55900c97a275eb8f01cb1",
   "sha256": {
     "ccdn/algorithms/ccdn_0a.py": "a9f14d4aaa49bc04a3f6912ba5e08cc847c20af1c2edbf78b1189ec0ae855a07",
     "ccdn/baselines/base.py": "73ab4a495cdf8bd71860d584fd83ae771bf4c67f7f044c06f287c74293f1be4f",
     "ccdn/baselines/selective_reset.py": "3f9c064c984f966cea608179d1148c3200d719ac2faad12bc4de320e08531331",
     "ccdn/baselines/static_sparse.py": "af535fc92130e968c535eb04c4754d5d5bd1d2ca5c691c1b7fa7a3013b33d4bf",
-    "ccdn/experiments/online_permuted_mnist.py": "a53157fcb665f900ba7a50c75fc51be7992105ca497e9ebebf35a12aa06fd425",
+    "ccdn/experiments/online_permuted_mnist.py": "d4feaf53caa42f2006507a8c5c0123f34df7d7cbc082d539bc0a5a2c51fca48b",
     "ccdn/metrics/plasticity.py": "1954500f7588629e7c0f6b8edde84dec35a0a0ac1cf5b9d88069521eedfe90ac",
     "ccdn/metrics/resources.py": "506a04527d37030a9e15e5b0f581d83597fd35509de3fb45e9d3b07691c5581a",
     "ccdn/models/sparse_mlp.py": "5163dc8e2e9c01831b25b32db9a8c1d0bb684b207634f527a01ca83177bac88c",
@@ -21,9 +21,9 @@
     "pyproject.toml": "62da9e5a51825408f6b308743deac84804e5dc2b2c3e37f441119d3f4cbd7acd",
     "scripts/collect_cycle2c_artifacts.py": "7e3e25ca74beb1725cd0c94e109a20baef3c2420317e9fea62d876a1bac4cc39",
     "scripts/preflight_cycle2c.py": "bed4e29901906e0f062e04291dad0e50a02f95196f034d542aaa923df76b6739",
-    "scripts/run_cycle2c.py": "c9bb865c1083e30ea06e7720ac41713d14ef8623670ada1d584a10bc193b30c7",
+    "scripts/run_cycle2c.py": "92939eb01d2e141208205d3e0dd70e151a4b7e19fab3528e4536d6a93d3565c7",
     "scripts/run_cycle2c.sh": "65758afd70afb4ef5ddb5a6f5a8296f6a4202a6c6b67c4d438aaf24913b4db20",
-    "tests/test_cycle2c_orchestrator.py": "d1e3067e07bdd28f8ceb4387e65d39a26d072c9594e470fa712a175d69594540",
-    "tests/test_cycle2c_protocol.py": "504bc355f9da11af6c8f47f54e1cb7587d208ed6851b73862501863d8b0cfa3e"
+    "tests/test_cycle2c_orchestrator.py": "1e98681f7d3341b18a7c80f204f724bddce1be9a49bb6eb2c4c98627a9d2fd74",
+    "tests/test_cycle2c_protocol.py": "c8c6ac6b315cf134e08ecee9fd322cde3a7b12faa7ad3bb2131ddc3e8be5f222"
   }
 }

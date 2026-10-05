@@ -6,4 +6,6 @@ The real-MNIST preflight processed the first 8,192 examples of task 0 for each o
 
 The methods use 99,533 logical active parameters including biases. `protocol.json` contains the frozen choices; `protocol_lock.json` records SHA256 hashes for 23 scientifically relevant sources and configs. `test_summary.json` records the complete unit suite and legacy synthetic smoke.
 
-Independently review this protocol-ready branch before running `./scripts/run_cycle2c.sh`. The runner performs the 150-task Static Sparse gate first and only then launches dynamic comparisons if every preregistered condition passes.
+Independently review this protocol-ready branch. The terminal caller must provide the reviewer-approved full commit SHA: `./scripts/run_cycle2c.sh <REVIEWER_APPROVED_FULL_SHA>`. The runner refuses a missing or mismatched SHA before MNIST loading, then performs the 150-task Static Sparse gate first and only launches dynamic comparisons if every preregistered condition passes.
+
+The Phase A hardening rerun passed 72 tests, the 10-run synthetic regression matrix, and the four-method 8,192-example real-MNIST preflight. Checkpoint recovery, active-edge overlap, and parent-visible atomic task heartbeats are covered by the added tests. The long scientific run was not started.

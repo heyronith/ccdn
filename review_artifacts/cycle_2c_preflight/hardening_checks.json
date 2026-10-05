@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "checkpoint_recovery": {
+    "latest_valid": "PASS",
+    "latest_corrupt_previous_valid": "PASS",
+    "latest_missing_previous_valid": "PASS",
+    "latest_corrupt_previous_corrupt": "PASS_REFUSED",
+    "latest_missing_previous_missing": "PASS_REFUSED",
+    "temporary_checkpoint_is_not_authoritative": "PASS"
+  },
+  "initial_active_mask_overlap": "PASS",
+  "reviewer_approved_sha": {
+    "matching": "PASS",
+    "wrong": "PASS_REFUSED",
+    "missing": "PASS_REFUSED"
+  },
+  "visible_parent_heartbeat": "PASS",
+  "atomic_status_and_heartbeat": "PASS",
+  "finite_check_cadence_step_4096": "PASS",
+  "real_mnist_preflight": {
+    "status": "PASS",
+    "methods": 4,
+    "examples_per_method": 8192,
+    "data_source": "mnist",
+    "synthetic_fallback": false,
+    "paired_initialization": true,
+    "identical_through_update_8191": true,
+    "first_intervention_update": 8192,
+    "logical_active_parameters": 99533,
+    "all_finite": true,
+    "checkpoint_roundtrip": true,
+    "active_edge_conservation": true,
+    "selective_reset_mask_preservation": true
+  },
+  "synthetic_regression": {
+    "completed": 10,
+    "expected": 10,
+    "status": "PASS"
+  },
+  "long_scientific_run_executed": false
+}
