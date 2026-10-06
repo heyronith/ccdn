@@ -1,0 +1,2 @@
+method,resource_group,seed,final_20_task_accuracy,plasticity_drop,mean_accuracy_tasks_100_149,final_dead_unit_fraction,final_mean_effective_rank,runtime_seconds,estimated_total_state_memory_bytes
+static_sparse,primary_sparse,101,0.8961600000000001,0.02406749999999991,0.8978440000000001,0.1388888888888889,97.138766737387,7187.961897625006,2466952
