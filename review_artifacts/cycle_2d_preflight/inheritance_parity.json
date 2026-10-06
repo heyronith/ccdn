@@ -1,0 +1,28 @@
+{
+  "active_weights_by_layer": [
+    52685,
+    22579,
+    22579,
+    672
+  ],
+  "algorithm_state_exact": true,
+  "completed_task_index": 149,
+  "global_optimizer_step": 9000000,
+  "historical_diagnostics_unchanged": true,
+  "historical_task_csv_unchanged": true,
+  "lifetime_examples_seen": 9000000,
+  "mask_state_exact": true,
+  "model_state_exact": true,
+  "new_protocol_hash": "0ff18ca9429a607171532694b748f95de547914e551f51bbbec3d8c3131fa723",
+  "new_task_sequence_sha256": "ee049154b6625b4cf226f328bc89a0eac983e887ed321df0d12991180b14353b",
+  "next_task_human_number": 151,
+  "next_task_index": 150,
+  "optimizer_state_exact": true,
+  "rng_state_exact": true,
+  "source_checkpoint_bytes_unchanged": true,
+  "source_checkpoint_sha256_after": "37492b00e1aef9db440be3374d6b6e79a816ee777a17afcc9e3e5e1bc2ecf779",
+  "source_checkpoint_sha256_before": "37492b00e1aef9db440be3374d6b6e79a816ee777a17afcc9e3e5e1bc2ecf779",
+  "source_protocol_hash": "019e306798b19183d1b4ee32a7c3ee200ad176f100c55900c97a275eb8f01cb1",
+  "status": "PASS",
+  "training_updates_during_bootstrap": 0
+}

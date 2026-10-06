@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "training_updates_during_preflight": 0,
+  "real_mnist": true,
+  "cycle2c_source_validation": true,
+  "all_prefix_hashes_match_locked_protocol": true,
+  "bootstrap_state_exact": true,
+  "next_task_index": 150,
+  "next_human_task": 151,
+  "latest_previous_checkpoint_helpers_tested": true,
+  "no_comparison_learner_constructed_by_preflight_bootstrap": true
+}

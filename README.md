@@ -67,3 +67,7 @@ Cycle 2C prepares a self-checking, resource-matched comparison of Static Sparse,
 This branch is **Phase A only**: code, tests, protocol lock, and a short 8,192-example-per-method real-MNIST preflight. The preflight is software validation, not scientific evidence. The 150-task experiment is intentionally not launched here. After independent review and approval of the final full commit SHA, use `./scripts/run_cycle2c.sh <REVIEWER_APPROVED_FULL_SHA>`. The runner requires that SHA to match HEAD, then checks the clean commit, protocol hashes, MNIST availability, exact stream digest, identical sparse initialization, checkpoint integrity, and a Static Sparse failure gate before it can launch any dynamic method. Results remain in gitignored `results/cycle2c/`.
 
 The compact Phase A evidence is in `review_artifacts/cycle_2c_preflight/`. Cycle 2C does not claim that CCDN works; the reviewer decides whether and when the full experiment should run.
+
+## Cycle 2D: Static Sparse lifetime calibration
+
+Cycle 2D continues only the completed Cycle 2C Static Sparse state to preregistered candidate horizons `[200, 250, 300, 400, 600, 800]`. The learner, optimizer, stream prefix, and sparse topology remain fixed. The Phase A preflight validates Cycle 2C provenance and exact checkpoint inheritance without training task 151. The terminal runner is `./scripts/run_cycle2d.sh <REVIEWER_APPROVED_FULL_SHA>`; do not invoke it until the reviewer approves the pushed protocol commit. Cycle 2D is baseline-only, does not launch comparison learners, and keeps CCDN unseen.

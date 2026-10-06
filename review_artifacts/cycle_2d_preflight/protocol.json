@@ -1,0 +1,108 @@
+{
+  "calibration_gate": {
+    "confirmation_rule": "Select the earliest candidate H that passes when its immediately following preregistered candidate also passes.",
+    "minimum_drop": 0.05,
+    "no_confirmation_after_800": true,
+    "require_exact_horizon_rows": true,
+    "require_final_50_ols_slope_negative": true,
+    "require_peak_before_final_20": true,
+    "require_post_peak_ols_slope_negative": true,
+    "rolling_window_tasks": 20
+  },
+  "cycle": "2D",
+  "diagnostics": {
+    "cadence": "every_5_tasks",
+    "candidate_horizon_snapshot": "required",
+    "examples": 2000,
+    "metrics": [
+      "task_online_accuracy_preupdate",
+      "mean_preupdate_loss",
+      "dead_unit_fraction_by_layer",
+      "effective_rank_by_layer",
+      "mean_absolute_weight_by_layer",
+      "active_edges_by_layer",
+      "finite_state"
+    ]
+  },
+  "learner": {
+    "activation": "relu",
+    "active_weights_by_layer": [
+      52685,
+      22579,
+      22579,
+      672
+    ],
+    "architecture": [
+      784,
+      336,
+      336,
+      336,
+      10
+    ],
+    "biases": 1018,
+    "data": "real_mnist_training_split_only",
+    "density": 0.2,
+    "example_order": "deterministic_per_task_random_order",
+    "examples_per_task": 60000,
+    "initialization": "active_fan_in_kaiming",
+    "learner_receives_task_metadata": false,
+    "learning_rate": 0.003,
+    "logical_active_parameters": 99533,
+    "momentum": 0.0,
+    "optimizer": "SGD",
+    "protocol": "one_example_at_a_time_prediction_before_update",
+    "regularization_changes": false,
+    "resets": false,
+    "seed": 101,
+    "synthetic_fallback": false,
+    "task_permutation": "deterministic_per_task_pixel_permutation",
+    "topology_changes": false,
+    "weight_decay": 0.0
+  },
+  "prohibited": [
+    "CCDN-0A",
+    "RigL",
+    "Selective_Reset",
+    "consolidation",
+    "PRS",
+    "replay",
+    "task IDs or boundary signals to learner"
+  ],
+  "science_label": "Static Sparse lifetime calibration; baseline-only; CCDN unseen",
+  "scientific_scope": {
+    "candidate_horizons": [
+      200,
+      250,
+      300,
+      400,
+      600,
+      800
+    ],
+    "comparisons": "none",
+    "maximum_tasks": 800,
+    "only_experimental_variable": "maximum_lifetime_tasks",
+    "purpose": "Find the earliest preregistered persistent loss-of-plasticity horizon for the fixed-capacity Static Sparse control."
+  },
+  "source_state": {
+    "cycle": "2C",
+    "execution_git_sha": "5b48752c3df050d47aae83cba49d08486ad837aa",
+    "protocol_hash": "019e306798b19183d1b4ee32a7c3ee200ad176f100c55900c97a275eb8f01cb1",
+    "run_id": "seed101_5b48752c_019e3067",
+    "source_checkpoint_sha256": "37492b00e1aef9db440be3374d6b6e79a816ee777a17afcc9e3e5e1bc2ecf779"
+  },
+  "status": "frozen_phase_a_protocol",
+  "stream": {
+    "examples_per_task": 60000,
+    "prefix_150_sha256": "1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844",
+    "prefix_sha256": {
+      "150": "1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844",
+      "200": "b635e0b32a6e7c8f52b14ea5017f645ea1dc4c6f5a0de209765181bf9fd068b3",
+      "250": "0fe24932f42cbc814b744c9f245f299b38d096ac4b42921e031f0e271a85ee4d",
+      "300": "991bfcfbaea58d6cc066df7b3184b6fda06f82b15be75048d10567225fe5790d",
+      "400": "dad819f9bba97f703f3594f9ff019df41949b12a71f10b34d37ee46ef92531da",
+      "600": "d4f62c25acf5a11208089b9cc9c1381201de85715db8a90df7d6481972e33bfc",
+      "800": "ee049154b6625b4cf226f328bc89a0eac983e887ed321df0d12991180b14353b"
+    },
+    "seed": 101
+  }
+}

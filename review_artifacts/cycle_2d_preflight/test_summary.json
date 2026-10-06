@@ -1,0 +1,7 @@
+{
+  "command": "python -m pytest -q",
+  "passed": 129,
+  "failed": 0,
+  "status": "PASS",
+  "synthetic_regression": "not run in this Cycle 2D calibration phase"
+}

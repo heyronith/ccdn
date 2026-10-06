@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checkpoint_sha256": "37492b00e1aef9db440be3374d6b6e79a816ee777a17afcc9e3e5e1bc2ecf779",
+  "checkpoint_path_relative": "results/cycle2c/seed101_5b48752c_019e3067/static_sparse/result/checkpoint_latest.pt",
+  "source_execution_sha": "5b48752c3df050d47aae83cba49d08486ad837aa",
+  "source_protocol_hash": "019e306798b19183d1b4ee32a7c3ee200ad176f100c55900c97a275eb8f01cb1",
+  "task_sequence_sha256": "1f2ddb0daa90715192118466b7088fd8d3ea78f44e8647af6bca0a686393f844",
+  "method": "static_sparse",
+  "completed_task_index": 149,
+  "lifetime_examples_seen": 9000000,
+  "global_optimizer_step": 9000000,
+  "required_state_present": [
+    "model",
+    "optimizer",
+    "algorithm",
+    "rng_state",
+    "config"
+  ],
+  "edge_budget": [
+    52685,
+    22579,
+    22579,
+    672
+  ],
+  "source_checkpoint_not_modified": true
+}

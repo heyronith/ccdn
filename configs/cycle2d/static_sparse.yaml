@@ -1,0 +1,31 @@
+experiment:
+  name: cycle2d_static_sparse_lifetime_calibration
+  seed: 101
+  device: auto
+  deterministic: true
+  cpu_threads: 1
+stream:
+  dataset_root: ./data
+  download: false
+  tasks: 800
+  examples_per_task: 60000
+model:
+  type: static_sparse
+  hidden_sizes: [336, 336, 336]
+  output_size: 10
+  density: 0.2
+  initialization: active_fan_in_kaiming
+optimizer:
+  type: sgd
+  learning_rate: 0.003
+  momentum: 0.0
+  weight_decay: 0.0
+diagnostics:
+  examples: 2000
+checkpointing:
+  rolling: true
+runtime:
+  strict_structural_cadence: true
+  expected_task_sequence_sha256: ee049154b6625b4cf226f328bc89a0eac983e887ed321df0d12991180b14353b
+output:
+  root: results/cycle2d

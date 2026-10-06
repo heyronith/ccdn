@@ -48,6 +48,24 @@ Warnings: Phase A preflight is a software integration check and is not scientifi
 
 Ready for review: YES — protocol-ready Phase A only; not approval to execute the long run.
 
+## Cycle 2C artifact collection
+
+Collection-only commit: `8467b07db9d87512ad45882829b0f36a269c8e5c` on `cycle-2c-ccdn-failure-regime`. The verified source run is `seed101_5b48752c_019e3067`; Static Sparse completed 150 tasks / 9,000,000 updates and the preregistered 150-task gate failed (drop `0.02406749999999991`). The checkpoint was not committed. The collected package is `review_artifacts/cycle_2c/`.
+
+## Cycle 2D Phase A — sparse lifetime calibration
+
+Base commit: `8467b07db9d87512ad45882829b0f36a269c8e5c`
+Final commit: reported in handoff
+Branch: `cycle-2d-sparse-lifetime-calibration`
+
+The frozen candidates are `[200, 250, 300, 400, 600, 800]`. A horizon is selected only when it and its immediately following candidate both pass the preregistered drop/trend gate. The protocol continues from Cycle 2C task index 149 and changes only maximum lifetime. No Cycle 2D comparison experiment was run or inspected; CCDN remains unseen.
+
+Cycle 2C source checkpoint SHA-256: `37492b00e1aef9db440be3374d6b6e79a816ee777a17afcc9e3e5e1bc2ecf779`; source protocol hash: `019e306798b19183d1b4ee32a7c3ee200ad176f100c55900c97a275eb8f01cb1`. Prefix/task hashes and state inheritance evidence are in `review_artifacts/cycle_2d_preflight/`.
+
+Tests: `.venv/bin/python -m pytest -q` — 129 passed, 0 failed. Real-MNIST preflight: PASS. Model, optimizer, algorithm, RNG, masks, checkpoint source bytes, and historical task/diagnostic CSVs matched exactly; Task 151 is the next task. Training updates during preflight: 0. Cycle 2D protocol hash: `0ff18ca9429a607171532694b748f95de547914e551f51bbbec3d8c3131fa723`.
+
+Long Cycle 2D continuation: **NOT EXECUTED.** Do not launch `./scripts/run_cycle2d.sh` until the reviewer approves the final protocol-ready SHA.
+
 ## Cycle 2C — Phase A final hardening
 
 Base commit: `6a0b8b4de8c47e73ea310cc450b940de338900ba`

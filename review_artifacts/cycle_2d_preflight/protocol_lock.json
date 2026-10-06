@@ -1,0 +1,30 @@
+{
+  "cycle": "2D",
+  "protocol_hash": "0ff18ca9429a607171532694b748f95de547914e551f51bbbec3d8c3131fa723",
+  "sha256": {
+    "ccdn/baselines/base.py": "73ab4a495cdf8bd71860d584fd83ae771bf4c67f7f044c06f287c74293f1be4f",
+    "ccdn/baselines/static_sparse.py": "af535fc92130e968c535eb04c4754d5d5bd1d2ca5c691c1b7fa7a3013b33d4bf",
+    "ccdn/experiments/online_permuted_mnist.py": "d4feaf53caa42f2006507a8c5c0123f34df7d7cbc082d539bc0a5a2c51fca48b",
+    "ccdn/metrics/plasticity.py": "1954500f7588629e7c0f6b8edde84dec35a0a0ac1cf5b9d88069521eedfe90ac",
+    "ccdn/metrics/resources.py": "506a04527d37030a9e15e5b0f581d83597fd35509de3fb45e9d3b07691c5581a",
+    "ccdn/models/sparse_mlp.py": "5163dc8e2e9c01831b25b32db9a8c1d0bb684b207634f527a01ca83177bac88c",
+    "ccdn/streams/online_permuted_mnist.py": "6cf5c9742064e50ec7e5cba10cd96f6a279225c206235447ef43a4c9bfa25b84",
+    "ccdn/utils/config.py": "b3a96f89f9b86cb447175e1b43ed6507bd687f3a608aa237bc2e0570737692cf",
+    "ccdn/utils/reproducibility.py": "eac978b8a3a851853aafc2707d83d4c077bd54c4d0ad0df96f91e6ac7e2ef510",
+    "configs/cycle2c/protocol_lock.json": "2a69ca4a5a4c6a425955b7303d9f9ca205c6e683069698d392b41a4e697d5cd9",
+    "configs/cycle2d/protocol.yaml": "236d7af1821fe62c8583233dd036e2170cda7e13efaa06dc5e09fe6af9bb51e1",
+    "configs/cycle2d/static_sparse.yaml": "c67aaca6ad8043f18dd53075d3e9bbf3481eb9fbe1f2bc56945f6ead43ab82b7",
+    "pyproject.toml": "62da9e5a51825408f6b308743deac84804e5dc2b2c3e37f441119d3f4cbd7acd",
+    "scripts/bootstrap_cycle2d.py": "e1b31fc15c4368e5f427757b9c771fb83b36e8199b1e31383625c3a6179de9be",
+    "scripts/cycle2d_calibration.py": "840a55ccd102f7abe20d11de679489a358e5c84e71c99200654edd57424c5451",
+    "scripts/preflight_cycle2d.py": "9d5414123b27ac8a6a05ee25d7197119521227b40b29c682a4ef41c35413d1a6",
+    "scripts/run_cycle2c.py": "92939eb01d2e141208205d3e0dd70e151a4b7e19fab3528e4536d6a93d3565c7",
+    "scripts/run_cycle2d.py": "29a2704f068272ae9868b78f0472a72d257a91865f8ae807228eb4e38d88f672",
+    "scripts/run_cycle2d.sh": "e85733ad3c7b887a8a58636dd7d39dbbf543164638a3a2d4828a5161a04f9473",
+    "tests/test_cycle2d_bootstrap.py": "c3c204eb8ce23524b6be8e47a43f307b9079e89464559dafe5c339844ae9ed31",
+    "tests/test_cycle2d_gate.py": "8f502cc86f0690f9f9ae52fdd46239861452ad6556593b74e24d1b48312cb70f",
+    "tests/test_cycle2d_runner.py": "b832c5f6a54d16a2e1014ec45f12c08245747759d5171b404b91cc8067dcc336",
+    "tests/test_cycle2d_stream.py": "a82d0e18cc0fc2b59751c44f1168edac22291672f0445a4258085c31c4bac9bf"
+  },
+  "source_execution_sha": "5b48752c3df050d47aae83cba49d08486ad837aa"
+}
